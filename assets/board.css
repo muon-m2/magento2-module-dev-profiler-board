@@ -1,0 +1,966 @@
+/**
+ * Muon Profiler board.
+ *
+ * Served straight from the module directory by Controller/Asset/Stylesheet — not through
+ * pub/static, not through LESS, not through the theme fallback chain. Editing this file shows up on
+ * the next reload with nothing to deploy.
+ *
+ * Two rules hold the design together:
+ *
+ *   1. Colour means verdict. --v-hit / --v-miss / --v-bad / --v-none carry meaning and nothing else
+ *      is allowed to use them. --accent is reserved for interaction, so a link can never be
+ *      misread as a finding.
+ *   2. The spine is the recurring structure. A 2px left bar on run rows, findings and the verdict
+ *      banner, coloured by [data-spine]. Position and colour encode the same fact twice, so
+ *      severity is scannable down a column without reading a word.
+ *
+ * Monospace is the body face and sans is the annotation — an inversion, on purpose. Every payload
+ * here is a path, a token, a millisecond or a statement; the machine voice is the primary one.
+ * System stacks only: this has to work in an offline container.
+ */
+
+/* Dark first. Light is a token swap under prefers-color-scheme, never a component override. */
+:root {
+    --ground: #0E1217;
+    --panel: #161B22;
+    --panel-2: #1B222B;
+    --rule: #232A33;
+    --ink: #D7DEE7;
+    --ink-dim: #8A97A6;
+    --ink-faint: #5C6875;
+    --v-hit: #4FB8A0;
+    --v-miss: #E0A94A;
+    --v-bad: #E06C6C;
+    --v-none: #6E7B8B;
+    --accent: #9C8CFF;
+    --accent-soft: rgba(156, 140, 255, .13);
+    --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --rail-width: 288px;
+    --spine: var(--v-none);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --ground: #F7F8FA;
+        --panel: #FFFFFF;
+        --panel-2: #F1F3F6;
+        --rule: #DFE3E9;
+        --ink: #1C232B;
+        --ink-dim: #5A6673;
+        --ink-faint: #8B96A3;
+        --v-hit: #1E8A73;
+        --v-miss: #A9761A;
+        --v-bad: #C0392F;
+        --v-none: #6E7B8B;
+        --accent: #5B45D6;
+        --accent-soft: rgba(91, 69, 214, .08);
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Spine colour, set once and read by every component that carries one. */
+[data-spine="v-hit"] { --spine: var(--v-hit); }
+[data-spine="v-miss"] { --spine: var(--v-miss); }
+[data-spine="v-bad"] { --spine: var(--v-bad); }
+[data-spine="v-none"] { --spine: var(--v-none); }
+
+.eyebrow {
+    font-family: var(--sans);
+    font-size: .66rem;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+}
+
+/* Anything a reader may copy back into a command keeps its own case. A run token is lowercase hex;
+   uppercasing it for looks hands them a token that resolves to nothing. */
+.eyebrow.is-verbatim {
+    text-transform: none;
+    letter-spacing: .04em;
+}
+
+.num {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── top bar ───────────────────────────────────────────────────────────── */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--panel);
+}
+
+.brand {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: .02em;
+    font-size: .86rem;
+    color: var(--ink);
+}
+
+.brand:hover {
+    text-decoration: none;
+}
+
+.brand span {
+    color: var(--accent);
+}
+
+.live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    font-family: var(--sans);
+    font-size: .72rem;
+    color: var(--ink-dim);
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--v-hit);
+    animation: pulse 2.6s ease-in-out infinite;
+}
+
+.dot[data-live="paused"] {
+    background: var(--ink-faint);
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+}
+
+/* ── frame ─────────────────────────────────────────────────────────────── */
+.shell {
+    display: grid;
+    grid-template-columns: var(--rail-width) 1fr;
+    min-height: calc(100dvh - 43px);
+}
+
+body.single .shell {
+    grid-template-columns: 1fr;
+}
+
+.main {
+    min-width: 0;
+}
+
+/* ── ledger rail ───────────────────────────────────────────────────────── */
+.rail {
+    border-right: 1px solid var(--rule);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rail-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 12px 14px 8px;
+}
+
+.rail-head-note {
+    margin-left: auto;
+}
+
+.rail-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 8px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.run {
+    position: relative;
+    display: block;
+    padding: 9px 12px 9px 16px;
+    border-bottom: 1px solid var(--rule);
+    color: inherit;
+}
+
+.run::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--spine);
+}
+
+.run:hover {
+    background: var(--panel-2);
+    text-decoration: none;
+}
+
+.run[aria-current="true"] {
+    background: var(--accent-soft);
+}
+
+.run[aria-current="true"]::before {
+    width: 3px;
+}
+
+.run-top {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    font-size: .7rem;
+}
+
+.run-path {
+    display: block;
+    margin: 3px 0 1px;
+    color: var(--ink);
+    font-size: .78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.run-foot {
+    font-size: .7rem;
+    color: var(--ink-faint);
+}
+
+.run.is-new {
+    animation: arrive 1.4s ease-out 1;
+}
+
+@keyframes arrive {
+    from { background: var(--accent-soft); }
+    to { background: transparent; }
+}
+
+.rail-empty {
+    padding: 4px 12px;
+}
+
+.rail-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--rule);
+}
+
+.rail-clear {
+    margin: 0;
+}
+
+/* The one destructive control on the board. Coral is the severity colour, so it stays quiet until
+   hovered rather than shouting from a sidebar somebody reads all day. */
+.btn-danger {
+    color: var(--v-bad);
+}
+
+.btn-danger:hover {
+    border-color: var(--v-bad);
+    color: var(--v-bad);
+}
+
+.rail.is-comparing .run {
+    cursor: copy;
+}
+
+.rail.is-comparing .run[data-compare-pick]::before {
+    width: 4px;
+    background: var(--accent);
+}
+
+/* ── chips ─────────────────────────────────────────────────────────────── */
+.chip {
+    font-family: var(--sans);
+    font-size: .62rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    color: var(--ink-dim);
+    white-space: nowrap;
+}
+
+.chip.v-hit { color: var(--v-hit); border-color: var(--v-hit); }
+.chip.v-miss { color: var(--v-miss); border-color: var(--v-miss); }
+.chip.v-bad { color: var(--v-bad); border-color: var(--v-bad); }
+.chip.v-none { color: var(--v-none); }
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0;
+}
+
+/* ── verdict banner ────────────────────────────────────────────────────── */
+.verdict {
+    padding: 20px 24px 0;
+}
+
+.verdict-line {
+    position: relative;
+    padding-left: 14px;
+    margin-top: 7px;
+    font-size: 1.3rem;
+    line-height: 1.32;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+}
+
+.verdict-line::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .18em;
+    bottom: .18em;
+    width: 3px;
+    background: var(--spine);
+}
+
+.verdict-state {
+    font-weight: 700;
+    color: var(--spine);
+}
+
+.verdict-because {
+    display: block;
+    margin-top: 6px;
+    font-size: .82rem;
+    color: var(--ink-dim);
+}
+
+.verdict-because code {
+    color: var(--ink);
+}
+
+/* ── evidence strip ────────────────────────────────────────────────────── */
+.evidence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 22px;
+    margin: 16px 24px 0;
+    padding: 10px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+}
+
+.ev {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+}
+
+.ev b {
+    font-weight: 600;
+    font-size: .86rem;
+}
+
+.ev .weak {
+    font-size: .7rem;
+    color: var(--ink-faint);
+}
+
+/* ── tabs ──────────────────────────────────────────────────────────────── */
+.tabs {
+    display: flex;
+    gap: 2px;
+    margin-top: 14px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    overflow-x: auto;
+}
+
+.tab {
+    padding: 8px 12px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--ink-dim);
+    font-family: var(--sans);
+    font-size: .76rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.tab:hover {
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.tab[aria-selected="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+}
+
+.tab .count {
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.tab[aria-selected="true"] .count {
+    color: var(--accent);
+}
+
+.tab-link {
+    margin-left: auto;
+    color: var(--accent);
+}
+
+/* ── panels ────────────────────────────────────────────────────────────── */
+.panel {
+    padding: 18px 24px 40px;
+}
+
+.panel[hidden] {
+    display: none;
+}
+
+.panel h3 {
+    margin: 22px 0 10px;
+    font-family: var(--sans);
+    font-size: .78rem;
+    letter-spacing: .01em;
+}
+
+.panel h3:first-child {
+    margin-top: 0;
+}
+
+.panel h1 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+}
+
+.lede {
+    max-width: 74ch;
+    margin: 0 0 14px;
+    font-size: .78rem;
+    color: var(--ink-dim);
+}
+
+.note {
+    max-width: 84ch;
+    margin: 14px 0 0;
+    padding: 8px 12px;
+    border-left: 2px solid var(--v-miss);
+    background: var(--panel);
+    font-size: .74rem;
+    color: var(--ink-dim);
+}
+
+.notice-page {
+    margin: 40px 24px;
+    padding: 24px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--panel);
+}
+
+/* ── key/value lists and tables ────────────────────────────────────────── */
+.kv {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 20px;
+    margin: 0;
+    font-size: .78rem;
+}
+
+.kv dt {
+    color: var(--ink-faint);
+}
+
+.kv dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* The recorded URL, as a way back to the page it profiled. Marked with ↗ because it opens a new
+   tab, which a bare link does not promise. */
+.open-url-mark {
+    margin-left: 5px;
+    font-size: .8em;
+    color: var(--ink-faint);
+}
+
+.open-url:hover .open-url-mark {
+    color: var(--accent);
+}
+
+.scroll {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .78rem;
+}
+
+th,
+td {
+    padding: 6px 12px 6px 0;
+    border-bottom: 1px solid var(--rule);
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    font-family: var(--sans);
+    font-size: .64rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+}
+
+td.n {
+    padding-right: 18px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── findings ──────────────────────────────────────────────────────────── */
+.finding {
+    position: relative;
+    margin-bottom: 10px;
+    padding: 11px 14px 11px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--panel);
+}
+
+.finding::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    border-radius: 4px 0 0 4px;
+    background: var(--spine);
+}
+
+.finding-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 7px;
+}
+
+.finding-head .why {
+    font-family: var(--sans);
+    font-size: .7rem;
+    color: var(--ink-faint);
+}
+
+.sql {
+    overflow-x: auto;
+    padding-bottom: 2px;
+    font-size: .76rem;
+    white-space: pre;
+}
+
+.finding-foot {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid var(--rule);
+    font-size: .72rem;
+    color: var(--ink-dim);
+}
+
+/* ── shadow ladder ─────────────────────────────────────────────────────── */
+.ladder {
+    margin: 0 0 16px;
+}
+
+.ladder-key {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+    font-size: .82rem;
+    color: var(--ink);
+}
+
+.rung {
+    position: relative;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 10px;
+    padding: 2px 0 2px 14px;
+    font-size: .76rem;
+}
+
+.rung::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--rule);
+}
+
+.rung.won::before { background: var(--v-hit); }
+.rung.shadowed::before { background: var(--v-bad); }
+.rung.anomaly::before { background: var(--v-miss); }
+
+.rung .mark {
+    font-family: var(--sans);
+    font-size: .64rem;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+}
+
+.rung.won .mark { color: var(--v-hit); }
+.rung.shadowed .mark { color: var(--v-bad); }
+.rung.anomaly .mark { color: var(--v-miss); }
+
+.rung.shadowed .path {
+    color: var(--ink-faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--v-bad);
+}
+
+.path {
+    overflow-wrap: anywhere;
+}
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding: 11px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--panel);
+}
+
+.controls .lede {
+    margin: 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.field label {
+    font-family: var(--sans);
+    font-size: .64rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+}
+
+input[type="text"],
+input[type="number"] {
+    width: 190px;
+    padding: 4px 7px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--ground);
+    color: var(--ink);
+    font: inherit;
+    font-size: .78rem;
+}
+
+input[type="number"] {
+    width: 96px;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 5px;
+    font-size: .76rem;
+    color: var(--ink-dim);
+}
+
+.btn {
+    padding: 5px 11px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--panel-2);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: .72rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.btn.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+}
+
+.btn.primary:hover {
+    color: #fff;
+    opacity: .9;
+}
+
+.btn[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* ── compare ───────────────────────────────────────────────────────────── */
+.cmp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 22px;
+}
+
+.cmp-head {
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+}
+
+/* ── raw ───────────────────────────────────────────────────────────────── */
+.raw {
+    max-height: 460px;
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--panel);
+    font-size: .74rem;
+    overflow: auto;
+}
+
+/* ── responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .shell {
+        grid-template-columns: 1fr;
+    }
+
+    .rail {
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+        max-height: 240px;
+    }
+
+    .cmp {
+        grid-template-columns: 1fr;
+    }
+
+    .verdict,
+    .tabs,
+    .panel {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .evidence {
+        margin-left: 14px;
+        margin-right: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* A notice page must always offer a way onward. A stale run token is not an error — the ring drops
+   old runs as new ones arrive — so this page is reached in normal use, not only when something
+   broke. */
+.notice-actions {
+    margin-top: 18px;
+}
+
+/* ── ledger filter ─────────────────────────────────────────────────────── */
+/* Collapsed by default: the rail's job is a glanceable list, not a search form. The toggle carries
+   a count when anything is set, so a ledger that is hiding rows always says so. */
+.rail-filter {
+    padding: 0 12px 8px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.filter-toggle {
+    width: 100%;
+    text-align: left;
+}
+
+.filter-toggle.is-active {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 9px;
+}
+
+.filter-form[hidden] {
+    display: none;
+}
+
+.filter-form .field label {
+    font-family: var(--sans);
+    font-size: .62rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.filter-row input,
+.filter-row select,
+.filter-range input {
+    width: 100%;
+    min-width: 0;
+}
+
+select {
+    padding: 4px 6px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--ground);
+    color: var(--ink);
+    font: inherit;
+    font-size: .76rem;
+}
+
+.filter-range {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-dash {
+    color: var(--ink-faint);
+}
+
+/* Verdict pickers look like the chips they filter, so the control resembles what it acts on. */
+.verdict-picks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.verdict-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    font-family: var(--sans);
+    font-size: .62rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    cursor: pointer;
+}
+
+.verdict-pick input {
+    margin: 0;
+}
+
+.verdict-pick.is-on.v-hit { color: var(--v-hit); border-color: var(--v-hit); }
+.verdict-pick.is-on.v-miss { color: var(--v-miss); border-color: var(--v-miss); }
+.verdict-pick.is-on.v-bad { color: var(--v-bad); border-color: var(--v-bad); }
+.verdict-pick.is-on.v-none { color: var(--v-none); border-color: var(--v-none); }
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-summary {
+    margin: 9px 0 0;
+    font-size: .72rem;
+    color: var(--ink-dim);
+}
+
+/* The URL needle is the widest thing in the panel and the one most often typed into. */
+.filter-url {
+    width: 100%;
+}
