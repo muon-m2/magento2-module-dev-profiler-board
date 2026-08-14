@@ -14,7 +14,7 @@ use Muon\DevProfilerBoard\Model\Asset\AssetReader;
 use Muon\DevProfilerBoard\Model\Response\BoardResponse;
 
 /**
- * The board script. One fixed file; the request supplies no path. One fixed file; the request supplies no path.
+ * The board script. One fixed file; the request supplies no path.
  */
 class Script implements HttpGetActionInterface
 {

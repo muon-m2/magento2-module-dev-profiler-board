@@ -8,10 +8,6 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Test\Unit\Model\Html;
 
-use Magento\Framework\Escaper;
-use Magento\Framework\Translate\InlineInterface;
-use Magento\Framework\ZendEscaper;
-use Psr\Log\LoggerInterface;
 use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 use Muon\DevProfilerBoard\Model\Html\FallbackPanel;
 use Muon\DevProfilerBoard\Model\Html\LayoutPanel;
@@ -21,6 +17,7 @@ use Muon\DevProfilerBoard\Model\Html\SqlPanel;
 use Muon\DevProfilerBoard\Model\Html\Tag;
 use Muon\DevProfilerBoard\Model\Html\VerdictBanner;
 use Muon\DevProfilerBoard\Model\Html\Widgets;
+use Muon\DevProfilerBoard\Test\Unit\UnitEscaper;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,6 +33,9 @@ use PHPUnit\Framework\TestCase;
  */
 class XssRegressionTest extends TestCase
 {
+    /** A real Escaper, not a mock — the claim is that the payload comes out inert. */
+    use UnitEscaper;
+
     private const PAYLOAD = '"><script>alert(1)</script>';
 
     private Tag $tag;
@@ -44,44 +44,8 @@ class XssRegressionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tag = new Tag($this->escaper());
+        $this->tag = new Tag($this->unitEscaper());
         $this->ui = new Widgets($this->tag);
-    }
-
-    /**
-     * A real Escaper, not a mock.
-     *
-     * Mocking it would make this test assert that the renderers *call* an escaper, which is not the
-     * claim — the claim is that the payload comes out inert. Escaper resolves the inline translator
-     * lazily through the global ObjectManager, which does not exist in a unit test, so that one
-     * collaborator is injected directly.
-     *
-     * @return \Magento\Framework\Escaper
-     */
-    private function escaper(): Escaper
-    {
-        $escaper = new Escaper();
-
-        foreach ($this->lazyCollaborators() as $property => $value) {
-            (new \ReflectionProperty(Escaper::class, $property))->setValue($escaper, $value);
-        }
-
-        return $escaper;
-    }
-
-    /**
-     * Escaper's three lazily-resolved collaborators, supplied so no code path reaches for the
-     * global ObjectManager.
-     *
-     * @return array<string, object>
-     */
-    private function lazyCollaborators(): array
-    {
-        return [
-            'escaper' => new ZendEscaper(),
-            'logger' => $this->createStub(LoggerInterface::class),
-            'translateInline' => $this->createStub(InlineInterface::class),
-        ];
     }
 
     public function testTheVerdictBannerRendersAPoisonedRunInert(): void

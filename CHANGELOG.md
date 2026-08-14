@@ -72,9 +72,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 - Developer mode only, gated by `Muon_DevProfiler`'s own `Gate`, which fails closed. There is
   deliberately no enable/disable field.
-- Read-only: no POST action, no CSRF surface, and no way to clear the ring from the web. That stays
-  `make profile-clear`.
-- The board excludes its own eight actions from the profiler's ring via
+- One mutation, and only one: **Clear runs** (POST, form-key validated). Every other route is GET
+  and writes nothing. Flushing the page cache is deliberately not offered — that stays
+  `make flush`.
+- The board excludes its own nine actions from the profiler's ring via
   `RunFinalizer::excludedActions`. Without it, browsing the board would evict the runs being
   inspected within seconds.
 - Requires `muon/module-dev-profiler ^1.2`.
