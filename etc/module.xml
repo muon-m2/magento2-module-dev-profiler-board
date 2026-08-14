@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <!--
+        Muon_DevProfiler only. No theme module is sequenced here, and none may be added: the board
+        renders its own document and must never resolve through the theme fallback chain.
+    -->
+    <module name="Muon_DevProfilerBoard">
+        <sequence>
+            <module name="Muon_DevProfiler"/>
+        </sequence>
+    </module>
+</config>

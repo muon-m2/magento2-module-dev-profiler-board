@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <!--
+        Underscore in a frontName follows core precedent (magento_version, inventory_catalog). The
+        namespace-separator hazard applies to controller action names, not to this.
+    -->
+    <router id="standard">
+        <route id="muon_profiler" frontName="muon_profiler">
+            <module name="Muon_DevProfilerBoard"/>
+        </route>
+    </router>
+</config>

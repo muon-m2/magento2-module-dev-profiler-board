@@ -1,0 +1,26 @@
+{
+    "name": "muon/module-dev-profiler-board",
+    "description": "Web board for Muon_DevProfiler: reads captured storefront runs and renders theme-independent verdict, fallback, SQL and layout panels. Developer mode only.",
+    "type": "magento2-module",
+    "license": "proprietary",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Serge Autushka",
+            "email": "s.autushka@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "~8.3.0 || ~8.4.0 || ~8.5.0",
+        "magento/framework": "^103.0.9",
+        "muon/module-dev-profiler": "^1.2"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Muon\\DevProfilerBoard\\": ""
+        }
+    }
+}
