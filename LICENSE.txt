@@ -1,35 +1,62 @@
-Muon Proprietary Software License
+Open Software License ("OSL") v. 3.0
 
-Copyright © Muon. All rights reserved.
+This Open Software License (the "License") applies to any original work of
+authorship (the "Original Work") whose owner (the "Licensor") has placed the
+following licensing notice adjacent to the copyright notice for the Original
+Work:
 
-This software and its accompanying documentation are the confidential and proprietary
-information of Muon. You shall not disclose such confidential information and shall use
-it only in accordance with the terms of the license agreement you entered into with Muon.
+Licensed under the Open Software License version 3.0
 
-1. GRANT OF LICENSE
-   Subject to the terms of this License, Muon grants you a non-exclusive, non-transferable
-   licence to install and use this software solely for your internal business purposes.
+1) Grant of Copyright License. Licensor grants You a worldwide, royalty-free,
+non-exclusive, sublicensable license, for the duration of the copyright, to do
+the following:
 
-2. RESTRICTIONS
-   You may not: (a) copy, modify, or create derivative works of the software except as
-   expressly permitted; (b) reverse engineer, decompile, or disassemble the software;
-   (c) rent, lease, lend, sell, sublicense, or redistribute the software to any third
-   party; or (d) remove or alter any proprietary notices contained in the software.
+  a) to reproduce the Original Work in copies, either alone or as part of a
+     collective work;
+  b) to translate, adapt, alter, transform, modify, or arrange the Original
+     Work, thereby creating derivative works ("Derivative Works") based upon
+     the Original Work;
+  c) to distribute or communicate copies of the Original Work and Derivative
+     Works to the public, with the proviso that copies of Original Work or
+     Derivative Works that You distribute or communicate shall be licensed
+     under this Open Software License;
+  d) to perform the Original Work publicly; and
+  e) to display the Original Work publicly.
 
-3. OWNERSHIP
-   The software is licensed, not sold. Muon retains all right, title, and interest in and
-   to the software, including all intellectual property rights therein.
+2) Grant of Patent License. Licensor grants You a worldwide, royalty-free,
+non-exclusive, sublicensable license, under patent claims owned or controlled
+by the Licensor that are embodied in the Original Work as furnished by the
+Licensor, for the duration of the patents, to make, use, sell, offer for sale,
+have made, and import the Original Work and Derivative Works.
 
-4. NO WARRANTY
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-   INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-   PARTICULAR PURPOSE AND NONINFRINGEMENT.
+3) Grant of Source Code License. The term "Source Code" means the preferred
+form of the Original Work for making modifications to it and all available
+documentation describing how to modify the Original Work. Licensor agrees to
+provide a machine-readable copy of the Source Code of the Original Work along
+with each copy of the Original Work that Licensor distributes.
 
-5. LIMITATION OF LIABILITY
-   IN NO EVENT SHALL MUON BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+4) Exclusions From License Grant. Neither the names of Licensor, nor the names
+of any contributors to the Original Work, nor any of their trademarks or
+service marks, may be used to endorse or promote products derived from this
+Original Work without express prior permission of the Licensor.
 
-6. TERMINATION
-   This License is effective until terminated. It terminates automatically if you fail to
-   comply with any of its terms. Upon termination you must destroy all copies of the software.
+5) External Deployment. The term "External Deployment" means the use,
+distribution, or communication of the Original Work or Derivative Works in any
+way such that the Original Work or Derivative Works may be used by anyone other
+than You, whether those works are distributed or communicated to those persons
+or made available as an application intended for use over a network.
+
+6) Attribution Rights. You must retain, in the Source Code of any Derivative
+Works You create, all copyright, patent, or trademark notices from the Source
+Code of the Original Work.
+
+7) Warranty of Provenance and Disclaimer of Warranty. THE ORIGINAL WORK IS
+PROVIDED UNDER THIS LICENSE ON AN "AS IS" BASIS AND WITHOUT WARRANTY, EITHER
+EXPRESS OR IMPLIED.
+
+8) Limitation of Liability. UNDER NO CIRCUMSTANCES AND UNDER NO LEGAL THEORY
+SHALL THE LICENSOR BE LIABLE TO ANY PERSON FOR ANY DIRECT, INDIRECT, SPECIAL,
+INCIDENTAL, OR CONSEQUENTIAL DAMAGES OF ANY CHARACTER ARISING AS A RESULT OF
+THIS LICENSE OR THE USE OF THE ORIGINAL WORK.
+
+Full license text: https://opensource.org/licenses/OSL-3.0
