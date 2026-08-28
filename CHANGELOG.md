@@ -38,9 +38,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 ### Changed
 
 - **CI runs the unit tests.** The `unit-tests` job was present but commented out, so 181 tests were
-  gated by nothing. It now runs on every push and pull request. `magento/*` comes from the public
-  Mage-OS mirror; the one unavoidable secret is `MUON_COMPOSER_TOKEN`, needed to read the private
-  `muon/module-dev-profiler` repository, and its absence fails the job rather than skipping it.
+  gated by nothing. It now runs on every push and pull request, and needs no secrets:
+  `magento/*` comes from the public Mage-OS mirror and `muon/module-dev-profiler` from its own
+  public repository. The job is deliberately unconditional — one made conditional on a secret skips
+  its steps and still reports success.
 
 - **`composer.json` declares where its own dependency lives.** A `repositories` entry for
   `muon/module-dev-profiler`, without which a standalone `composer install` could not resolve it.

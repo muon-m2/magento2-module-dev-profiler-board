@@ -156,20 +156,6 @@ jobs:
           composer config repositories.mageos composer https://mirror.mage-os.org/
           composer config --no-plugins allow-plugins false
 
-      # muon/module-dev-profiler is a private repo, so this one secret is
-      # unavoidable. It is checked explicitly and FAILS rather than skipping:
-      # a job that skips its steps still reports success.
-      - name: Authenticate for the private muon/* dependency
-        env:
-          MUON_TOKEN: ${{ secrets.MUON_COMPOSER_TOKEN }}
-        run: |
-          if [ -z "$MUON_TOKEN" ]; then
-            echo "::error::MUON_COMPOSER_TOKEN is not set. Add a token that can read" \
-                 "muon-m2/magento2-module-dev-profiler, or the unit tests cannot run."
-            exit 1
-          fi
-          composer config --global --auth github-oauth.github.com "$MUON_TOKEN"
-
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --no-interaction
 
