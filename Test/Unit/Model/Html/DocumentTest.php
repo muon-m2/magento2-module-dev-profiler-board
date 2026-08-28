@@ -36,11 +36,65 @@ class DocumentTest extends TestCase
     {
         $url = $this->createStub(UrlInterface::class);
         $url->method('getUrl')->willReturnCallback(
-            static fn (string $route, array $params = []): string => 'https://muon.localhost/en-us/' . $route
+            static function (string $route, array $params = []): string {
+                $base = 'https://muon.localhost/en-us/' . $route;
+                $query = $params['_query'] ?? [];
+
+                return $query === [] ? $base : $base . '?' . http_build_query($query);
+            }
         );
 
         $tag = new Tag($this->unitEscaper());
         $this->document = new Document($tag, new UrlBuilder($url));
+    }
+
+    /**
+     * The live feed must ask for the slice the page was rendered with.
+     *
+     * The ledger is replaced wholesale by every poll, so a feed URL that omits the reader's filter
+     * repopulates it with the rows they just filtered out — four seconds after the page loads, and
+     * again on every tick. Carrying the filter here rather than reassembling it in JavaScript is
+     * the point: `RunFilter::toQuery()` is the one place that knows the parameter names.
+     */
+    public function testTheLiveFeedUrlCarriesTheActiveFilter(): void
+    {
+        $html = $this->document->render(
+            'T',
+            '<li>rail</li>',
+            '<p>main</p>',
+            [],
+            ['url' => 'home', 'verdict' => 'miss,hit', 'min_ms' => 50]
+        );
+
+        $feed = $this->feedUrl($html);
+
+        self::assertStringContainsString('runs/feed', $feed);
+        self::assertStringContainsString('url=home', $feed, 'the free-text URL filter was dropped');
+        self::assertStringContainsString('verdict=miss%2Chit', $feed);
+        self::assertStringContainsString('min_ms=50', $feed);
+    }
+
+    public function testAnUnfilteredPageAsksForAnUnfilteredFeed(): void
+    {
+        $feed = $this->feedUrl($this->document->render('T', '<li>rail</li>', '<p>main</p>'));
+
+        self::assertStringContainsString('runs/feed', $feed);
+        self::assertStringNotContainsString('?', $feed);
+    }
+
+    /**
+     * The decoded `data-feed` attribute — it is HTML-attribute escaped in the markup.
+     *
+     * @param string $html
+     * @return string
+     */
+    private function feedUrl(string $html): string
+    {
+        preg_match('/data-feed="([^"]*)"/', $html, $matches);
+
+        self::assertArrayHasKey(1, $matches, 'the document rendered no data-feed attribute');
+
+        return html_entity_decode((string)($matches[1] ?? ''), ENT_QUOTES, 'UTF-8');
     }
 
     public function testTheDocumentPullsInNothingFromMagentosAssetPipeline(): void

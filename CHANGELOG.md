@@ -22,6 +22,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   framework fall back to its "not a POST, so allow it" shortcut), and that a closed gate clears
   nothing even with a valid key.
 
+### Fixed
+
+- **A filtered ledger no longer repopulates itself four seconds after the page loads.** The live
+  feed URL was built without the active filter, and `board.js` compensated by rebuilding the query
+  from `window.location` against its own hand-maintained list of parameter names. That list omitted
+  `url`, so a page filtered by URL text polled an unfiltered feed and replaced the reader's five
+  matching rows with the whole 25-row ring — then rebuilt the list on every tick, flashing the
+  arrival highlight as new runs arrived.
+
+  The filter now travels on `data-feed`, built from `RunFilter::toQuery()` — the same source the
+  ledger links already use — and the JavaScript reassembles nothing. There is one list of parameter
+  names again, so it cannot drift a second time.
+
 ### Changed
 
 - **CI runs the unit tests.** The `unit-tests` job was present but commented out, so 181 tests were

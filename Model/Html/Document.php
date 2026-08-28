@@ -42,12 +42,22 @@ class Document
      * @param string $rail Markup for the ledger column; empty renders a single-column page.
      * @param string $main Markup for the detail column.
      * @param array<string,mixed> $meta runs, store — shown in the top bar.
+     * @param array<string,string|int|float> $feedQuery The active filter, from RunFilter::toQuery().
      * @return string
      */
-    public function render(string $title, string $rail, string $main, array $meta = []): string
-    {
+    public function render(
+        string $title,
+        string $rail,
+        string $main,
+        array $meta = [],
+        array $feedQuery = []
+    ): string {
         return '<!doctype html>'
-            . $this->element('html', ['lang' => 'en'], $this->head($title) . $this->body($rail, $main, $meta));
+            . $this->element(
+                'html',
+                ['lang' => 'en'],
+                $this->head($title) . $this->body($rail, $main, $meta, $feedQuery)
+            );
     }
 
     /**
@@ -114,9 +124,10 @@ class Document
      * @param string $rail
      * @param string $main
      * @param array<string,mixed> $meta
+     * @param array<string,string|int|float> $feedQuery
      * @return string
      */
-    private function body(string $rail, string $main, array $meta): string
+    private function body(string $rail, string $main, array $meta, array $feedQuery = []): string
     {
         $columns = $this->element('main', ['class' => 'main'], $main);
 
@@ -127,7 +138,11 @@ class Document
         return $this->element(
             'body',
             [
-                'data-feed' => $this->urls->link(UrlBuilder::ROUTE_FEED),
+                // The filter travels with the feed URL, so the poll asks for the slice the page
+                // was rendered with. Reassembling it in JavaScript instead means two lists of
+                // parameter names that must agree; the one that drifted omitted `url`, and the
+                // ledger repopulated itself with the rows the reader had just filtered out.
+                'data-feed' => $this->urls->link(UrlBuilder::ROUTE_FEED, $feedQuery),
                 'class' => $rail === '' ? 'single' : null,
             ],
             $this->topbar($meta) . $this->element('div', ['class' => 'shell'], $columns)
