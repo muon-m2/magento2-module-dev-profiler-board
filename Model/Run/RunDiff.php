@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Run;
 
+use Muon\DevProfiler\Model\Analysis\CacheVerdict;
+
 /**
  * What changed between two captured runs.
  *
@@ -29,6 +31,14 @@ class RunDiff
         'duration_ms' => 'Duration (ms)',
         'memory_peak_kb' => 'Peak memory (KB)',
     ];
+
+    /**
+     * @param \Muon\DevProfiler\Model\Analysis\CacheVerdict $verdicts
+     */
+    public function __construct(
+        private readonly CacheVerdict $verdicts
+    ) {
+    }
 
     /**
      * @param array<string,mixed> $left
@@ -87,38 +97,55 @@ class RunDiff
      */
     private function verdictChange(array $left, array $right): ?array
     {
-        $a = $this->section($left, 'layout');
-        $b = $this->section($right, 'layout');
+        // Delegated, not recomputed. Deriving the verdict here from `generated` and `cacheable`
+        // alone made this page disagree with the ledger beside it in two ways: it ignored
+        // request.kind, so a static run and a cache-hit run both read as generated=false /
+        // cacheable=null and compared equal, while the rail showed `n/a` against `hit`; and its
+        // cause list skipped constructor_optouts entirely, so a page made uncacheable only by a
+        // constructor opt-out — the headline discovery this toolchain exists for — showed a named
+        // cause on the run page and an empty list here.
+        $a = $this->verdictOf($left);
+        $b = $this->verdictOf($right);
 
-        $before = [$a['generated'] ?? null, $a['cacheable'] ?? null];
-        $after = [$b['generated'] ?? null, $b['cacheable'] ?? null];
-
-        if ($before === $after) {
+        if ($a['status'] === $b['status'] && $a['causes'] === $b['causes']) {
             return null;
         }
 
         return [
-            'a' => ['generated' => $a['generated'] ?? null, 'cacheable' => $a['cacheable'] ?? null],
-            'b' => ['generated' => $b['generated'] ?? null, 'cacheable' => $b['cacheable'] ?? null],
-            'causes' => $this->causeNames($b),
+            'a' => [
+                'status' => $a['status'],
+                'generated' => $this->section($left, 'layout')['generated'] ?? null,
+                'cacheable' => $this->section($left, 'layout')['cacheable'] ?? null,
+            ],
+            'b' => [
+                'status' => $b['status'],
+                'generated' => $this->section($right, 'layout')['generated'] ?? null,
+                'cacheable' => $this->section($right, 'layout')['cacheable'] ?? null,
+            ],
+            'causes' => $b['causes'],
         ];
     }
 
     /**
-     * @param array<string,mixed> $layout
-     * @return list<string>
+     * The collector's verdict for one run, kind included.
+     *
+     * @param array<string,mixed> $run
+     * @return array{status: string, causes: list<string>}
      */
-    private function causeNames(array $layout): array
+    private function verdictOf(array $run): array
     {
-        $names = [];
+        $kind = (string)($this->section($run, 'request')['kind'] ?? 'page');
+        $verdict = $this->verdicts->verdict($this->section($run, 'layout'), $kind);
 
-        foreach ($this->asList($layout['uncacheable_blocks'] ?? null) as $block) {
-            if (!empty($block['in_play'])) {
-                $names[] = (string)($block['name'] ?? $block['class'] ?? '?');
-            }
+        $causes = [];
+
+        foreach ($this->asList($verdict['causes'] ?? null) as $cause) {
+            $causes[] = is_array($cause)
+                ? (string)($cause['name'] ?? $cause['class'] ?? '?')
+                : (string)$cause;
         }
 
-        return $names;
+        return ['status' => (string)($verdict['status'] ?? ''), 'causes' => $causes];
     }
 
     /**

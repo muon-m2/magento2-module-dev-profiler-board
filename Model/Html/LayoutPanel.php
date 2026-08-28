@@ -95,7 +95,12 @@ class LayoutPanel
         }
 
         return $this->ui->heading('Blocks declaring cacheable="false"', sprintf('%d', count($blocks)))
-            . $this->ui->table(['Block', 'Class', 'Template', 'Generated?'], $rows)
+            . $this->ui->table(
+                ['Block', 'Class', 'Template', 'Generated?'],
+                $rows,
+                [],
+                'Blocks declaring cacheable="false"'
+            )
             . $this->ui->note(
                 'Only blocks confirmed generated are offered as a cause. A declaration that never '
                 . 'produced an element cannot be why this page was uncacheable.'
@@ -121,7 +126,7 @@ class LayoutPanel
         }
 
         return $this->ui->heading('Layouts constructed non-cacheable', sprintf('%d', count($optOuts)))
-            . $this->ui->table(['Origin'], $rows);
+            . $this->ui->table(['Origin'], $rows, [], 'Layouts constructed non-cacheable');
     }
 
     /**

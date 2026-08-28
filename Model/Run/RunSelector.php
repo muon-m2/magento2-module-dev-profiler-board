@@ -28,6 +28,24 @@ use Muon\DevProfiler\Model\Store\RunStore;
 class RunSelector
 {
     /**
+     * The stored-document schema this board knows how to render.
+     *
+     * The collector stamps `schema` into every run and has reserved the right to change the shape
+     * behind it. Every read here is defensively guarded, which means a newer document does not
+     * error — it renders as empty panels and zeroed counters, a capped answer presenting itself as
+     * a complete one. That is the failure mode this whole tool exists to avoid, so an unrecognised
+     * schema is refused instead and the caller says why.
+     */
+    public const SUPPORTED_SCHEMA = 1;
+
+    /**
+     * Memoized scans for this request, keyed by cap and filter.
+     *
+     * @var array<string, array{rows: list<array<string,mixed>>, matching: int}>
+     */
+    private array $scanned = [];
+
+    /**
      * @param \Muon\DevProfiler\Model\Store\RunStore $store
      * @param \Muon\DevProfiler\Model\Analysis\CacheVerdict $verdict
      * @param int $feedLimit Ledger rows per request; RunStore's ring caps it further.
@@ -67,6 +85,18 @@ class RunSelector
     }
 
     /**
+     * Whether a run was captured by a profiler this board understands.
+     *
+     * @param array<string,mixed>|null $run
+     * @return bool
+     */
+    public function isSupported(?array $run): bool
+    {
+        return $run === null || (int)($run['schema'] ?? 1) <= self::SUPPORTED_SCHEMA;
+    }
+
+
+    /**
      * How many runs the ring holds, which is not how many the ledger shows.
      *
      * The two differ whenever feedLimit is below the ring size, and conflating them makes a capped
@@ -87,31 +117,7 @@ class RunSelector
      */
     public function feed(?int $limit = null, ?RunFilter $filter = null): array
     {
-        $cap = $this->limit($limit);
-
-        // Unfiltered, read only as many runs as the ledger will show. Filtered, read the **whole
-        // ring** and cap afterwards: filtering the first page would let "show me the uncacheable
-        // runs" come back empty while uncacheable runs sat further down, which is a filtered list
-        // presenting itself as a complete answer.
-        $wanted = $filter !== null && $filter->isActive() ? $this->store->count() : $cap;
-
-        $rows = [];
-
-        foreach ($this->store->list(max(1, $wanted)) as $run) {
-            $row = $this->row($run);
-
-            if ($filter !== null && !$filter->matches($row)) {
-                continue;
-            }
-
-            $rows[] = $row;
-
-            if (count($rows) >= $cap) {
-                break;
-            }
-        }
-
-        return $rows;
+        return $this->scan($filter, $this->limit($limit))['rows'];
     }
 
     /**
@@ -129,15 +135,56 @@ class RunSelector
             return $this->total();
         }
 
-        $matched = 0;
+        return $this->scan($filter, $this->limit(null))['matching'];
+    }
 
-        foreach ($this->store->list(max(1, $this->store->count())) as $run) {
-            if ($filter->matches($this->row($run))) {
-                $matched++;
+    /**
+     * Read the ring once and answer both questions from the same pass.
+     *
+     * Every board page and every four-second poll asks for the rows and the match count together —
+     * Feed and BoardPage both call feed() then matching(). Answering them separately meant two
+     * independent full-ring scans, each re-listing the directory and re-decoding every run file,
+     * with nothing cached between them. The result is memoized per (cap, filter) for the request,
+     * so the second question is free.
+     *
+     * Unfiltered, only as many runs as the ledger will show are read. Filtered, the whole ring is
+     * read: filtering the first page would let "show me the uncacheable runs" come back empty while
+     * uncacheable runs sat further down, which is a filtered list presenting itself as a complete
+     * answer.
+     *
+     * @param \Muon\DevProfilerBoard\Model\Run\RunFilter|null $filter
+     * @param int $cap
+     * @return array{rows: list<array<string,mixed>>, matching: int}
+     */
+    private function scan(?RunFilter $filter, int $cap): array
+    {
+        $active = $filter !== null && $filter->isActive();
+        $key = $cap . '|' . ($active ? (string)json_encode($filter->toQuery()) : '');
+
+        if (isset($this->scanned[$key])) {
+            return $this->scanned[$key];
+        }
+
+        $wanted = $active ? $this->store->count() : $cap;
+
+        $rows = [];
+        $matching = 0;
+
+        foreach ($this->store->list(max(1, $wanted)) as $run) {
+            $row = $this->row($run);
+
+            if ($filter !== null && !$filter->matches($row)) {
+                continue;
+            }
+
+            $matching++;
+
+            if (count($rows) < $cap) {
+                $rows[] = $row;
             }
         }
 
-        return $matched;
+        return $this->scanned[$key] = ['rows' => $rows, 'matching' => $matching];
     }
 
     /**

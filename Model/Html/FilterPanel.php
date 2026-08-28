@@ -109,13 +109,14 @@ class FilterPanel
     private function urlNeedle(RunFilter $filter): string
     {
         return $this->field('URL contains', $this->tag->tag('input', [
+            'id' => 'filter-url',
             'type' => 'text',
             'name' => 'url',
             'class' => 'filter-url',
             'placeholder' => '/en-us/gear',
             'value' => $filter->url,
             'autocomplete' => 'off',
-        ]));
+        ]), 'filter-url');
     }
 
     /**
@@ -166,8 +167,13 @@ class FilterPanel
         return $this->tag->tag(
             'div',
             ['class' => 'filter-row'],
-            $this->field('Method', $this->tag->tag('select', ['name' => 'method'], $methods))
+            $this->field(
+                'Method',
+                $this->tag->tag('select', ['id' => 'filter-method', 'name' => 'method'], $methods),
+                'filter-method'
+            )
             . $this->field('Status', $this->tag->tag('input', [
+                'id' => 'filter-status',
                 'type' => 'number',
                 'name' => 'status',
                 'class' => 'num',
@@ -175,7 +181,7 @@ class FilterPanel
                 'min' => '100',
                 'max' => '599',
                 'value' => $filter->status,
-            ]))
+            ]), 'filter-status')
         );
     }
 
@@ -189,23 +195,28 @@ class FilterPanel
      */
     private function range(string $label, string $minName, string $maxName, float|int|null $min, float|int|null $max): string
     {
-        $input = static fn (string $name, string $placeholder, float|int|null $value): array => [
+        // Two controls under one visible label. `for` can only point at one of them, so each
+        // carries its own accessible name — otherwise a screen reader reads both as the same field
+        // and the reader cannot tell which end of the range they are in.
+        $input = static fn (string $name, string $placeholder, float|int|null $value, string $aria): array => [
+            'id' => 'filter-' . $name,
             'type' => 'number',
             'name' => $name,
             'class' => 'num',
             'min' => '0',
             'step' => 'any',
             'placeholder' => $placeholder,
+            'aria-label' => $aria,
             'value' => $value,
         ];
 
         return $this->field($label, $this->tag->tag(
             'div',
             ['class' => 'filter-range'],
-            $this->tag->tag('input', $input($minName, 'min', $min))
+            $this->tag->tag('input', $input($minName, 'min', $min, 'Minimum ' . $label))
             . $this->tag->tag('span', ['class' => 'filter-dash'], '–')
-            . $this->tag->tag('input', $input($maxName, 'max', $max))
-        ));
+            . $this->tag->tag('input', $input($maxName, 'max', $max, 'Maximum ' . $label))
+        ), 'filter-' . $minName);
     }
 
     /**
@@ -256,12 +267,17 @@ class FilterPanel
      * @param string $control
      * @return string
      */
-    private function field(string $label, string $control): string
+    private function field(string $label, string $control, ?string $for = null): string
     {
+        // Without `for`, seven controls in this form had no accessible name at all — a screen
+        // reader announced "edit text, blank". SqlPanel and ComparePanel already wire for/id;
+        // this panel was the one that did not.
+        $attributes = $for === null ? [] : ['for' => $for];
+
         return $this->tag->tag(
             'div',
             ['class' => 'field'],
-            $this->tag->tag('label', [], $this->tag->text($label)) . $control
+            $this->tag->tag('label', $attributes, $this->tag->text($label)) . $control
         );
     }
 }

@@ -91,7 +91,7 @@ argument** instead, as `excludedActions` does.
 
 **Never reimplement an analysis.** `ShadowResolver`, `CacheVerdict`, `QueryAnalyzer` and
 `ResolutionSet` live in `Muon_DevProfiler` and are shared with the CLI. A local reimplementation
-means the board and `make profile` can report different answers for the same token, and a reader has
+means the board and `bin/magento muon:profile:show` can report different answers for the same token, and a reader has
 no way to tell which is lying. If you need a presentation rule the CLI also needs, put it in the
 profiler and consume it from both — that is exactly why `ResolutionSet` exists.
 
@@ -122,7 +122,7 @@ independently rather than together.
 ## Running the checks
 
 ```bash
-make test-file f=app/code/Muon/DevProfilerBoard/Test/Unit
+vendor/bin/phpunit Test/Unit
 docker exec muon-php vendor/bin/phpcs --standard=Magento2 app/code/Muon/DevProfilerBoard
 docker exec muon-php vendor/bin/phpmd app/code/Muon/DevProfilerBoard text app/code/Muon/DevProfilerBoard/phpmd.xml
 docker exec muon-php vendor/bin/phpstan analyse --level=8 app/code/Muon/DevProfilerBoard

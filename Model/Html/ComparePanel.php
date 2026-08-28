@@ -174,7 +174,7 @@ class ComparePanel
         // absence, because a reader chasing a theme override cannot tell "nothing moved" from
         // "the diff did not look" — but it belongs beside the table, not as a row in it, or a
         // comparison of two identical runs would never report itself as unchanged.
-        return $this->ui->table(['Change', 'Detail'], $rows)
+        return $this->ui->table(['Change', 'Detail'], $rows, [], 'What changed between the two runs')
             . ($winners === [] ? $this->ui->note(
                 'No fallback winner moved — every file resolved to the same physical copy in both runs.'
             ) : '');

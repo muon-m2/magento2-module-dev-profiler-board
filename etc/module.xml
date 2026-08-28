@@ -2,12 +2,27 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
     <!--
-        Muon_DevProfiler only. No theme module is sequenced here, and none may be added: the board
-        renders its own document and must never resolve through the theme fallback chain.
+        The board renders its own document: no block, no .phtml, no layout handle, no view file,
+        and its CSS and JS are served from its own routes rather than through static content
+        deployment. That is what makes the rendered page theme-independent, and it is asserted by
+        DocumentTest.
+
+        The page is not the request, though. Magento_Theme registers LoadDesignPlugin on
+        ActionInterface, which every controller here implements, so DesignLoader::load() runs before
+        execute() and loads the theme model and translations on every board request — resolving
+        i18n through the same fallback chain the collector records. That is bounded: etc/di.xml
+        keeps board actions out of the ring, so those resolutions never reach stored evidence.
+
+        A theme module must still not be sequenced here. Note that <sequence> controls config merge
+        order and has no bearing on the fallback chain, so it is the wrong lever to reach for
+        either way.
     -->
     <module name="Muon_DevProfilerBoard">
         <sequence>
             <module name="Muon_DevProfiler"/>
+            <!-- Not a theme module, so not covered by the prohibition above: BoardPage reads the
+                 store code for the top bar, and the config merge order has to be defined. -->
+            <module name="Magento_Store"/>
         </sequence>
     </module>
 </config>

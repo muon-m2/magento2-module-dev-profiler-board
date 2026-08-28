@@ -71,7 +71,7 @@ class RunView
         ];
 
         return $this->banner->render($run, $this->section($analysis, 'verdict'), $this->totals($analysis))
-            . $this->tabs($analysis, $active, $token)
+            . $this->tabs($analysis, $active, $token, $state)
             . $this->panels($bodies, $active);
     }
 
@@ -79,9 +79,10 @@ class RunView
      * @param array<string,mixed> $analysis
      * @param string $active
      * @param string $token
+     * @param array<string,string|int|float|null> $state Analysis state carried into each tab link.
      * @return string
      */
-    private function tabs(array $analysis, string $active, string $token): string
+    private function tabs(array $analysis, string $active, string $token, array $state = []): string
     {
         $totals = $this->totals($analysis);
 
@@ -102,10 +103,16 @@ class RunView
                 $inner .= ' ' . $this->tag->tag('span', ['class' => 'count'], $this->tag->text($count));
             }
 
-            $markup .= $this->tag->tag('button', [
+            // A link, not a button. Panel switching lives in board.js, and the inactive panels
+            // carry the real `hidden` attribute — so with JavaScript off there was no in-page
+            // control that could reach Layout or Raw at all; only hand-editing ?panel= worked.
+            // board.js intercepts the click and keeps the tab behaviour, exactly as the Compare
+            // tab-link below already worked.
+            $markup .= $this->tag->tag('a', [
                 'class' => 'tab',
-                'type' => 'button',
+                'id' => 't-' . $panel,
                 'role' => 'tab',
+                'href' => $this->urls->run($token, ['panel' => $panel] + $state),
                 'aria-selected' => $panel === $active ? 'true' : 'false',
                 'aria-controls' => 'p-' . $panel,
             ], $inner);
@@ -135,6 +142,7 @@ class RunView
                 'class' => 'panel',
                 'id' => 'p-' . $panel,
                 'role' => 'tabpanel',
+                'aria-labelledby' => 't-' . $panel,
                 'hidden' => $panel !== $active,
             ], $bodies[$panel] ?? '');
         }

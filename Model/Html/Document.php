@@ -50,13 +50,14 @@ class Document
         string $rail,
         string $main,
         array $meta = [],
-        array $feedQuery = []
+        array $feedQuery = [],
+        string $heading = ''
     ): string {
         return '<!doctype html>'
             . $this->element(
                 'html',
                 ['lang' => 'en'],
-                $this->head($title) . $this->body($rail, $main, $meta, $feedQuery)
+                $this->head($title) . $this->body($rail, $main, $meta, $feedQuery, $heading === '' ? $title : $heading)
             );
     }
 
@@ -125,11 +126,24 @@ class Document
      * @param string $main
      * @param array<string,mixed> $meta
      * @param array<string,string|int|float> $feedQuery
+     * @param string $heading Rendered as the page's h1; defaults to the document title.
      * @return string
      */
-    private function body(string $rail, string $main, array $meta, array $feedQuery = []): string
-    {
-        $columns = $this->element('main', ['class' => 'main'], $main);
+    private function body(
+        string $rail,
+        string $main,
+        array $meta,
+        array $feedQuery = [],
+        string $heading = ''
+    ): string {
+        // Every panel heading is an h2 under this one. Without it the outline started at h2 with
+        // nothing above it, so a screen-reader user navigating by heading had no page-level anchor
+        // — on a document that is otherwise a long list of sibling sections.
+        $h1 = $heading === ''
+            ? ''
+            : $this->element('h1', ['class' => 'sr-only'], $this->tag->text($heading));
+
+        $columns = $this->element('main', ['class' => 'main'], $h1 . $main);
 
         if ($rail !== '') {
             $columns = $this->element('nav', ['class' => 'rail', 'aria-label' => 'Recorded runs'], $rail) . $columns;

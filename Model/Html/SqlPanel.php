@@ -287,7 +287,12 @@ class SqlPanel
             ];
         }
 
-        return $this->ui->table(['', 'Statement shape', '×', 'Total ms', 'Max ms', 'Origin'], $rows, [2, 3, 4]);
+        return $this->ui->table(
+            ['', 'Statement shape', '×', 'Total ms', 'Max ms', 'Origin'],
+            $rows,
+            [2, 3, 4],
+            'Recorded statement shapes'
+        );
     }
 
     /**

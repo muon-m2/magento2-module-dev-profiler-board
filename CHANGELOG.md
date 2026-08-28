@@ -4,6 +4,102 @@ All notable changes to `Muon_DevProfilerBoard` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-08-28
+
+Closes the Medium findings from the 2026-08-28 release-readiness audit.
+
+### Security
+
+- **`RequestUrl::openable()` accepted `/\host`.** The guard blocked protocol-relative `//` and
+  nothing else, but in the WHATWG URL parser's relative-slash state a backslash routes into
+  special-authority-ignore-slashes exactly as a slash does — so browsers resolved `/\evil.example/`
+  to another origin, and `escapeUrl()` left the backslash untouched. The dangerous form was
+  `/\evil.example\@muon.localhost/`, which renders with the real host at the end and reads as a
+  local path. A backslash anywhere in the first segment is now refused.
+
+### Fixed
+
+- **`RunDiff` reimplemented the cache verdict instead of delegating to `CacheVerdict`.** It derived
+  the verdict from `generated` and `cacheable` alone, so it ignored `request.kind` — a static run
+  and a cache-hit run both compared equal while the ledger beside them showed `n/a` against `hit` —
+  and its cause list skipped `constructor_optouts` entirely, so a page made uncacheable only by a
+  constructor opt-out showed a named cause on the run page and an empty list on compare.
+
+- **The ledger was scanned twice per page and per poll.** `feed()` and `matching()` each read the
+  whole ring independently whenever a filter was active, re-listing the directory and re-decoding
+  every run file. One memoized pass now answers both.
+
+- **Two unguarded array keys** emitted PHP warnings for any run missing an optional field:
+  `FallbackPanel` on `module`, `VerdictBanner` on `store_id`. Both were found by the new tests.
+
+- **`RunFilter::VERDICTS` hardcoded `CacheVerdict`'s values** as string literals while naming it as
+  the source of truth. It now references the constants.
+
+### Added
+
+- **The run document's `schema` is checked.** The board displayed it and never read it, so a run
+  captured by a newer collector rendered as empty panels and zeroed counters — a capped answer
+  presenting itself as a complete one. An unrecognised schema now says so.
+
+- **`Test\Unit\Controller\ExcludedActionsTest`.** The registry that keeps the board from recording
+  its own requests was checked "in review". Its failure is silent and destructive: a tenth
+  controller without an entry gets recorded, and an open board polls every four seconds, so it
+  evicts the runs the reader is looking at. Both sides are now read from disk and diffed.
+
+- **Tests for the classes that had none**: `BoardResponse` (the no-store and noindex headers are a
+  stated privacy control), `Widgets` and `UrlBuilder` (shared by every panel), `RunView` (the one
+  place a raw `?panel=` decides what renders), `BoardPage`, and the panel branching that
+  `XssRegressionTest` never reached. 274 tests, up from 208.
+
+### Accessibility
+
+- **A page heading.** Every panel heading was `h3` with no `h1` or `h2` above it.
+- **Seven filter controls had no accessible name** — `FilterPanel` was the one panel not wiring
+  `for`/`id`. Range pairs carry their own `aria-label`, since one label cannot name two inputs.
+- **Data tables** gained `scope="col"` and a visually-hidden caption.
+- **Contrast**: `--ink-faint` measured 2.83–3.30:1 and colours table headers, field labels and every
+  eyebrow — the text that says what a value *is*. It and three verdict chips now clear 4.5:1 in both
+  schemes.
+- **The compare picker announced nothing.** The first pick was signalled by a border colour alone;
+  it now sets `aria-pressed` and writes to a live region.
+- **Tabs are links.** Panel switching lives in JavaScript and inactive panels carry the real
+  `hidden` attribute, so with JavaScript off there was no control that could reach Layout or Raw at
+  all. `board.js` intercepts the click, so behaviour is unchanged when it runs.
+
+### Changed
+
+- **`excludedActions` is contributed globally, not per-area.** Array arguments merge item-wise
+  within a scope, but across scopes `Config::extend()` `array_replace()`s the whole `arguments`
+  entry — so a third module contributing from global `di.xml`, where `RunFinalizer` is also
+  constructed, would have been discarded silently.
+
+- **`BoardPage` no longer reads the ring.** It injected `RunSelector` and `StoreManagerInterface`
+  and fetched its own data, putting data access in `Model\Html` and making it the only renderer
+  without a test. A `LedgerResolver` resolves rows, counts and store code for the two callers that
+  render a board page.
+
+- **`magento/module-store` is declared and sequenced.** It was used by `BoardPage` and satisfied
+  only transitively through the collector.
+
+- **`muon/module-dev-profiler` raised to `^1.4`**, the release that marks its read surface `@api`.
+  Six concrete classes were being consumed across ten files with no BC promise behind them.
+
+- **The theme-independence claim is scoped to what actually holds.** The rendered document is
+  theme-independent and asserted so; the *request* is not — `Magento_Theme` registers
+  `LoadDesignPlugin` on `ActionInterface`, so `DesignLoader::load()` runs before every board
+  action. That is bounded, because `excludedActions` keeps those resolutions out of stored evidence.
+
+- **Documentation uses `bin/magento`, not `make`** — those targets are monorepo wrappers that exist
+  in no Magento install.
+
+### Known trade-off, accepted
+
+- **Deployment mode remains the only access control.** There is no ACL, admin-session check or IP
+  allowlist behind `BoardGate`. The gate is not request-controllable and fails closed, but the
+  failure mode is binary: an FPM pool reporting `MAGE_MODE=developer` on a public host exposes the
+  ring. A second factor was considered and deliberately not added, because it would change who can
+  open the board on a developer's own machine.
+
 ## [1.1.0] — 2026-08-28
 
 ### Changed
@@ -107,7 +203,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   costume of a total. It now reads "25 of 50 in ring", and "no runs yet" when the ring is empty.
 
 - **Clear runs.** The board's only mutation, and the only reason it has a POST action: the collector's
-  own console output tells a reader to run `make profile-clear` before capturing a cold request, and
+  own console output tells a reader to run `bin/magento muon:profile:clear` before capturing a cold request, and
   the board could not perform the workflow it was telling them to run.
 
   POST with a form key, a confirm, and a redirect afterwards so a refresh cannot clear a second time.
@@ -139,7 +235,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   deliberately no enable/disable field.
 - One mutation, and only one: **Clear runs** (POST, form-key validated). Every other route is GET
   and writes nothing. Flushing the page cache is deliberately not offered — that stays
-  `make flush`.
+  `bin/magento cache:flush`.
 - The board excludes its own nine actions from the profiler's ring via
   `RunFinalizer::excludedActions`. Without it, browsing the board would evict the runs being
   inspected within seconds.

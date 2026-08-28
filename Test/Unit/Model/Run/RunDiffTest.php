@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Test\Unit\Model\Run;
 
+use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 use Muon\DevProfilerBoard\Model\Run\RunDiff;
 use PHPUnit\Framework\TestCase;
 
@@ -20,7 +21,7 @@ class RunDiffTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->diff = new RunDiff();
+        $this->diff = new RunDiff(new CacheVerdict());
     }
 
     public function testComparingARunAgainstItselfReportsNothingChanged(): void

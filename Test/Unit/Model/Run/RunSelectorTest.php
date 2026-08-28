@@ -231,4 +231,60 @@ class RunSelectorTest extends TestCase
     {
         return new RunSelector($this->store, new CacheVerdict(), $feedLimit);
     }
+
+    /**
+     * Every board page and every four-second poll asks for the rows and the match count together:
+     * Feed and BoardPage both call feed() then matching(). Answering them separately meant two
+     * independent full-ring scans, each re-listing the directory and re-decoding every run file.
+     */
+    public function testTheRowsAndTheMatchCountComeFromOneRingScan(): void
+    {
+        $runs = [];
+
+        foreach (['hit', 'miss', 'uncacheable', 'miss'] as $i => $verdict) {
+            $runs[] = [
+                'token' => sprintf('%012d', $i),
+                'request' => ['method' => 'GET', 'url' => '/en-us/p' . $i, 'status' => 200, 'kind' => 'page'],
+                'layout' => ['generated' => $verdict !== 'hit', 'cacheable' => $verdict === 'miss'],
+            ];
+        }
+
+        $this->store->expects(self::once())->method('count')->willReturn(count($runs));
+        $this->store->expects(self::once())->method('list')->willReturn($runs);
+
+        $selector = $this->selector();
+        $filter = new RunFilter(['miss']);
+
+        $rows = $selector->feed(null, $filter);
+        $matching = $selector->matching($filter);
+
+        self::assertCount(2, $rows, 'two of the four runs are a miss');
+        self::assertSame(2, $matching);
+    }
+
+    /**
+     * The cap must never be mistaken for the answer: the ledger shows a page, the counter reports
+     * how many matched across the whole ring.
+     */
+    public function testTheMatchCountIsNotCappedByTheLedgerSize(): void
+    {
+        $runs = [];
+
+        for ($i = 0; $i < 30; $i++) {
+            $runs[] = [
+                'token' => sprintf('%012d', $i),
+                'request' => ['method' => 'GET', 'url' => '/en-us/p', 'status' => 200, 'kind' => 'page'],
+                'layout' => ['generated' => true, 'cacheable' => true],
+            ];
+        }
+
+        $this->store->method('count')->willReturn(30);
+        $this->store->expects(self::once())->method('list')->willReturn($runs);
+
+        $selector = $this->selector();
+        $filter = new RunFilter(['miss']);
+
+        self::assertCount(25, $selector->feed(null, $filter), 'the ledger is capped at feedLimit');
+        self::assertSame(30, $selector->matching($filter), 'the count is not');
+    }
 }

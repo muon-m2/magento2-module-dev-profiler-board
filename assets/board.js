@@ -77,8 +77,17 @@
         }
 
         tabs.forEach(function (tab, i) {
-            tab.addEventListener('click', function () {
+            tab.addEventListener('click', function (event) {
+                // The tabs are real links so the panels are reachable without JavaScript. With
+                // JavaScript they stay tabs: swallow the navigation and switch in place. Modified
+                // clicks (new tab, new window) are left alone deliberately.
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.button > 0) {
+                    return;
+                }
+
+                event.preventDefault();
                 select(i);
+                tab.focus();
             });
 
             tab.addEventListener('keydown', function (event) {
@@ -362,6 +371,8 @@
             if (!first) {
                 first = token;
                 row.setAttribute('data-compare-pick', 'a');
+                row.setAttribute('aria-pressed', 'true');
+                announce('Run ' + token + ' selected as A. Pick a second run to compare.');
 
                 return;
             }
@@ -372,7 +383,25 @@
         function clearPicks() {
             Array.prototype.forEach.call(list.querySelectorAll('[data-compare-pick]'), function (row) {
                 row.removeAttribute('data-compare-pick');
+                row.removeAttribute('aria-pressed');
             });
+        }
+
+        // The first pick was signalled by a border colour and nothing else, so a screen-reader or
+        // keyboard-only user got no confirmation that it had registered, or which run it was.
+        function announce(message) {
+            var region = document.getElementById('board-status');
+
+            if (!region) {
+                region = document.createElement('div');
+                region.id = 'board-status';
+                region.className = 'sr-only';
+                region.setAttribute('role', 'status');
+                region.setAttribute('aria-live', 'polite');
+                document.body.appendChild(region);
+            }
+
+            region.textContent = message;
         }
 
         function compareUrl(a, b) {

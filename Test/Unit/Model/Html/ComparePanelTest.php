@@ -11,6 +11,7 @@ namespace Muon\DevProfilerBoard\Test\Unit\Model\Html;
 use Muon\DevProfilerBoard\Model\Html\ComparePanel;
 use Muon\DevProfilerBoard\Model\Html\Tag;
 use Muon\DevProfilerBoard\Model\Html\Widgets;
+use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 use Muon\DevProfilerBoard\Model\Run\RunDiff;
 use Muon\DevProfilerBoard\Test\Unit\UnitEscaper;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +31,7 @@ class ComparePanelTest extends TestCase
     {
         $tag = new Tag($this->unitEscaper());
         $this->panel = new ComparePanel($tag, new Widgets($tag));
-        $this->diff = new RunDiff();
+        $this->diff = new RunDiff(new CacheVerdict());
     }
 
     public function testBothSidesAreRenderedWithTheirTokens(): void
