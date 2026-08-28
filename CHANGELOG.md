@@ -4,6 +4,35 @@ All notable changes to `Muon_DevProfilerBoard` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`Test/Unit/Controller/GateEnforcementTest`.** None of the nine controllers had a test, and the
+  board's only access control is one hand-copied `isOpen()` line per controller with no base class
+  enforcing it. The test discovers controllers by walking `Controller/` rather than listing them, so
+  a tenth added without the check fails here instead of quietly serving profiler data on a
+  storefront route. It asserts both that a closed gate returns `notFound()` and that no collaborator
+  is reached — the second matters because a controller with its own not-found branch can satisfy the
+  first without ever consulting the gate.
+
+- **`Test/Unit/Controller/Runs/ClearTest`.** The board's only state-changing request, and the only
+  place a cross-site POST could destroy the evidence someone is reading. Pins that the form key is
+  validated rather than waived, that `validateForCsrf()` never returns `null` (which would let the
+  framework fall back to its "not a POST, so allow it" shortcut), and that a closed gate clears
+  nothing even with a valid key.
+
+### Changed
+
+- **CI runs the unit tests.** The `unit-tests` job was present but commented out, so 181 tests were
+  gated by nothing. It now runs on every push and pull request. `magento/*` comes from the public
+  Mage-OS mirror; the one unavoidable secret is `MUON_COMPOSER_TOKEN`, needed to read the private
+  `muon/module-dev-profiler` repository, and its absence fails the job rather than skipping it.
+
+- **`composer.json` declares where its own dependency lives.** A `repositories` entry for
+  `muon/module-dev-profiler`, without which a standalone `composer install` could not resolve it.
+  Composer ignores `repositories` in a dependency, so consuming installs are unaffected.
+
 ## [1.0.0] — 2026-08-14
 
 ### Added
