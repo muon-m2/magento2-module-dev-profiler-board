@@ -195,32 +195,14 @@
 
         // The feed is asked for the same slice the page was rendered with, so a poll cannot
         // repopulate the ledger with rows the reader just filtered out.
-        function feedWithFilter() {
-            try {
-                var target = new URL(feedUrl, window.location.href);
-                var here = new URLSearchParams(window.location.search);
-
-                ['verdict', 'method', 'status', 'min_ms', 'max_ms', 'min_stmt', 'max_stmt'].forEach(function (key) {
-                    here.getAll(key).forEach(function (value) {
-                        if (value !== '') {
-                            target.searchParams.append(key, value);
-                        }
-                    });
-                    here.getAll(key + '[]').forEach(function (value) {
-                        if (value !== '') {
-                            target.searchParams.append(key, value);
-                        }
-                    });
-                });
-
-                return target.toString();
-            } catch (error) {
-                return feedUrl;
-            }
-        }
-
+        //
+        // `feedUrl` already carries the filter: the server builds it from RunFilter::toQuery(), the
+        // same source the ledger links use. This script deliberately does not rebuild the query
+        // from window.location — that meant a second list of parameter names kept in step by hand,
+        // and it drifted: `url` was missing from it, so a page filtered only by URL text polled an
+        // unfiltered feed and replaced its own ledger with the whole ring every four seconds.
         function refresh() {
-            fetch(feedWithFilter(), { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            fetch(feedUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
                 .then(function (response) {
                     return response.ok ? response.json() : null;
                 })

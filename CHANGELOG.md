@@ -4,6 +4,49 @@ All notable changes to `Muon_DevProfilerBoard` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] — 2026-08-28
+
+### Added
+
+- **`Test/Unit/Controller/GateEnforcementTest`.** None of the nine controllers had a test, and the
+  board's only access control is one hand-copied `isOpen()` line per controller with no base class
+  enforcing it. The test discovers controllers by walking `Controller/` rather than listing them, so
+  a tenth added without the check fails here instead of quietly serving profiler data on a
+  storefront route. It asserts both that a closed gate returns `notFound()` and that no collaborator
+  is reached — the second matters because a controller with its own not-found branch can satisfy the
+  first without ever consulting the gate.
+
+- **`Test/Unit/Controller/Runs/ClearTest`.** The board's only state-changing request, and the only
+  place a cross-site POST could destroy the evidence someone is reading. Pins that the form key is
+  validated rather than waived, that `validateForCsrf()` never returns `null` (which would let the
+  framework fall back to its "not a POST, so allow it" shortcut), and that a closed gate clears
+  nothing even with a valid key.
+
+### Fixed
+
+- **A filtered ledger no longer repopulates itself four seconds after the page loads.** The live
+  feed URL was built without the active filter, and `board.js` compensated by rebuilding the query
+  from `window.location` against its own hand-maintained list of parameter names. That list omitted
+  `url`, so a page filtered by URL text polled an unfiltered feed and replaced the reader's five
+  matching rows with the whole 25-row ring — then rebuilt the list on every tick, flashing the
+  arrival highlight as new runs arrived.
+
+  The filter now travels on `data-feed`, built from `RunFilter::toQuery()` — the same source the
+  ledger links already use — and the JavaScript reassembles nothing. There is one list of parameter
+  names again, so it cannot drift a second time.
+
+### Changed
+
+- **CI runs the unit tests.** The `unit-tests` job was present but commented out, so 181 tests were
+  gated by nothing. It now runs on every push and pull request, and needs no secrets:
+  `magento/*` comes from the public Mage-OS mirror and `muon/module-dev-profiler` from its own
+  public repository. The job is deliberately unconditional — one made conditional on a secret skips
+  its steps and still reports success.
+
+- **`composer.json` declares where its own dependency lives.** A `repositories` entry for
+  `muon/module-dev-profiler`, without which a standalone `composer install` could not resolve it.
+  Composer ignores `repositories` in a dependency, so consuming installs are unaffected.
+
 ## [1.0.0] — 2026-08-14
 
 ### Added

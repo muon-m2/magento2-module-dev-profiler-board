@@ -66,7 +66,9 @@ class BoardPage
                 'matching' => $matching,
                 'filtered' => $filter->isActive(),
                 'store' => $this->storeCode(),
-            ]
+            ],
+            // Same query the ledger links carry, so the live feed polls the filtered slice.
+            $filter->toQuery()
         );
     }
 
