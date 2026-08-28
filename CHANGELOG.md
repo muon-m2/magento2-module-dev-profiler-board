@@ -4,6 +4,28 @@ All notable changes to `Muon_DevProfilerBoard` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-08-28
+
+### Changed
+
+- **Relicensed from proprietary to OSL-3.0**, matching `Muon_DevProfiler`, which this module depends
+  on and cannot be used without.
+
+  The previous pairing did not hold together. OSL-3.0 is reciprocal and has no linking exception,
+  and its §5 treats External Deployment — serving over a network, which is exactly what this module
+  does — as distribution. This module imports six of the collector's classes across ten files,
+  reproduces its analysis semantics and writes into its DI graph, so whether it constituted a
+  Derivative Work was a live question rather than a settled one. A proprietary license forbidding
+  copying and derivative works sat on the wrong side of it.
+
+  `LICENSE.txt` now carries the full verbatim OSL-3.0 text rather than an abridged excerpt with a
+  link. The excerpt omitted operative sections — including Termination for Patent Action and
+  Jurisdiction — and is not recognized by license detectors, so a relicense resting on it would
+  have been neither complete nor visible to compliance tooling.
+
+  No source file changed: every header already read "See LICENSE.txt for license details", which is
+  the same notice the collector uses.
+
 ## [1.0.1] — 2026-08-28
 
 ### Added
