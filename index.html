@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muon DevProfiler Board — read your Magento profiler runs in a browser</title>
+<meta name="description" content="A theme-independent web board for Muon_DevProfiler: a live ledger of recent storefront runs, cache verdicts, SQL and fallback panels, and a diff between any two runs. Developer mode only.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+    <a class="brand" href="./">MUON <span>PROFILER BOARD</span></a>
+    <span class="eyebrow">Muon_DevProfilerBoard</span>
+    <nav>
+        <a href="#install">Install</a>
+        <a href="#panels">Panels</a>
+        <a href="#collector">Collector</a>
+        <a href="https://github.com/muon-m2/magento2-module-dev-profiler-board">GitHub</a>
+    </nav>
+</header>
+
+<div class="wrap">
+
+<div class="hero">
+    <p class="eyebrow">Companion to Muon_DevProfiler · developer mode only</p>
+    <h1>The same runs, without leaving the browser</h1>
+    <p class="lede">
+        A web board for captured profiler runs: a ledger that updates as new requests land, a cache
+        verdict with the block that caused it, SQL shapes ranked by finding, the fallback ladder, and a
+        diff between any two runs. It renders its own document and resolves nothing through the theme —
+        so the storefront cannot restyle it, and it cannot pollute the evidence it displays.
+    </p>
+    <div class="pills">
+        <span class="pill">OSL-3.0</span>
+        <span class="pill">Magento 2.4.9</span>
+        <span class="pill">PHP 8.3 – 8.5</span>
+        <span class="pill">no theme dependency</span>
+        <span class="pill">no static deploy</span>
+    </div>
+</div>
+
+<section id="panels">
+    <h2>Five panels and a ledger</h2>
+    <p class="section-note">Each answers one question, and says when it cannot.</p>
+    <div class="cards">
+        <div class="card">
+            <h3>Overview</h3>
+            <p>Request, context and the verdict banner — method, URL, store, theme, duration, peak memory.</p>
+        </div>
+        <div class="card">
+            <h3>Fallback</h3>
+            <p>The resolution ladder per file: which directory won, which copies lost, and an explicit note
+               when the replay could not be trusted.</p>
+        </div>
+        <div class="card">
+            <h3>SQL</h3>
+            <p>Statement shapes with execution counts, timings and calling <code>file:line</code>, ranked by
+               finding rather than by order of appearance.</p>
+        </div>
+        <div class="card">
+            <h3>Layout</h3>
+            <p>Handles in play, blocks declaring <code>cacheable="false"</code>, and constructor opt-outs —
+               separating what was declared from what was actually generated.</p>
+        </div>
+        <div class="card">
+            <h3>Raw</h3>
+            <p>The stored document verbatim, plus JSON and Markdown exports for pasting into an issue.</p>
+        </div>
+        <div class="card">
+            <h3>Compare</h3>
+            <p>Two runs side by side: what changed in the verdict, the timings and the statement set.</p>
+        </div>
+    </div>
+</section>
+
+<section id="verdicts">
+    <h2>The verdict vocabulary</h2>
+    <p class="section-note">Delegated to the collector, so the board and <code>bin/magento muon:profile:show</code> can never disagree about the same token.</p>
+    <div class="chips">
+        <span class="chip v-hit">hit</span>
+        <span class="chip v-miss">miss</span>
+        <span class="chip v-bad">uncacheable</span>
+        <span class="chip v-none">n/a</span>
+    </div>
+</section>
+
+<section id="install">
+    <h2>Install</h2>
+    <p class="section-note">Both repositories are public; no authentication.</p>
+<pre><span class="c"># the collector, then the board</span>
+composer config repositories.muon-dev-profiler vcs \
+    https://github.com/muon-m2/magento2-module-dev-profiler
+composer config repositories.muon-dev-profiler-board vcs \
+    https://github.com/muon-m2/magento2-module-dev-profiler-board
+composer require --dev muon/module-dev-profiler-board
+
+bin/magento module:enable Muon_DevProfiler Muon_DevProfilerBoard
+bin/magento setup:upgrade</pre>
+    <p>Then open <code>/muon_profiler/</code> on the storefront.</p>
+    <h3>Access</h3>
+    <p>
+        The board is served only in developer mode. That gate is the collector's own, delegated rather
+        than re-tested — two answers to "is profiling active here" would eventually disagree, and the
+        wrong disagreement is a board that renders on an installation the collectors have correctly
+        decided is production. It fails closed: an installation that cannot report its own mode is
+        treated as production. In any other mode every route returns 404.
+    </p>
+    <p>
+        Deployment mode is the <em>only</em> access control — there is no ACL, admin-session check or IP
+        allowlist behind it. On a shared or public host, make sure the web tier's <code>MAGE_MODE</code>
+        is what you think it is: it comes from the FastCGI environment and can differ from what
+        <code>bin/magento deploy:mode:show</code> reports for the CLI.
+    </p>
+</section>
+
+<section id="independence">
+    <h2>Why it looks nothing like your storefront</h2>
+    <p>
+        The board builds its own HTML document and serves its own CSS and JS through its own routes. No
+        block, no <code>.phtml</code>, no layout handle, no view file, and nothing through
+        <code>setup:static-content:deploy</code>.
+    </p>
+    <p>
+        That is not an aesthetic choice. This module displays theme-fallback evidence, and a board that
+        resolved its own template through the fallback chain would add its own resolutions to the very
+        list the reader is trying to interpret. Its requests are also excluded from the collector's ring,
+        so browsing the board — and the poll behind it — cannot evict the runs being inspected.
+    </p>
+</section>
+
+<section id="collector">
+    <h2>It needs the collector</h2>
+    <div class="sibling">
+        <div>
+            <strong>Muon_DevProfiler</strong>
+            <p>
+                The headless profiler that records the runs: theme-fallback forensics, cache verdicts,
+                layout opt-outs and SQL shapes, captured per request and readable from the CLI. The board
+                is a reader; this is what does the recording.
+            </p>
+        </div>
+        <a class="btn" href="https://muon-m2.github.io/magento2-module-dev-profiler/">The collector →</a>
+    </div>
+</section>
+
+<footer>
+    <span><a href="https://github.com/muon-m2/magento2-module-dev-profiler-board">Source</a></span>
+    <span><a href="https://github.com/muon-m2/magento2-module-dev-profiler-board/releases">Releases</a></span>
+    <span><a href="https://github.com/muon-m2/magento2-module-dev-profiler-board/blob/main/CHANGELOG.md">Changelog</a></span>
+    <span><a href="https://github.com/muon-m2/magento2-module-dev-profiler-board/blob/main/docs/user-guide.md">User guide</a></span>
+    <span><a href="https://muon-m2.github.io/magento2-module-dev-profiler/">Muon_DevProfiler</a></span>
+    <span>OSL-3.0</span>
+</footer>
+
+</div>
+</body>
+</html>
