@@ -30,18 +30,22 @@ the collector's new `@api` surface.
   export. GitHub sanitises; plenty of local previewers and wikis do not. It now goes through `cell()`
   like every other free-form value.
 
-- **`X-Content-Type-Options: nosniff` on every board response**, and an explicit charset on all of
-  them, assets included. The content types are already correct, so no current browser sniffs these
+- **`X-Content-Type-Options: nosniff` on every board response that carries a body**, and an explicit
+  charset on all of them bar JSON, for which RFC 8259 leaves the parameter undefined. The closed-gate
+  404 stays deliberately bare; a 404 that carries a message has already passed the gate, so it gets
+  the safe headers. The content types are already correct, so no current browser sniffs these
   into HTML — this is the layer for a future one, an embedding context, or a proxy that rewrites
   `Content-Type`.
 
 ### Performance
 
-- **The CSS and JS routes revalidate instead of re-fetching.** Both are full Magento bootstraps that
-  ran on every board page load and could never be served from cache, because every board response
-  carries `no-store`. That is the right default for a page showing profiler data, but these two files
-  are versionless and hold no per-visitor state, so they now carry an ETag and the browser can ask
-  "still the same?" — two fewer bootstraps per page load.
+- **The CSS and JS routes revalidate instead of re-fetching.** Both could never be served from cache,
+  because every board response carries `no-store`. That is the right default for a page showing
+  profiler data, but these two files are versionless and hold no per-visitor state, so they now carry
+  an ETag and answer `If-None-Match` with a 304 — about 41 KB of body per board page load that no
+  longer crosses the wire. Magento still boots to answer the conditional request; saving that would
+  need a `max-age`, which would serve a stale board after an upgrade, and for a dev tool that is the
+  wrong trade.
 
 - **The live feed backs off when it fails.** A fixed 4s retry hammered an instance that had gone away
   — a container restart, an FPM bounce — for as long as the tab stayed open. It now doubles up to a

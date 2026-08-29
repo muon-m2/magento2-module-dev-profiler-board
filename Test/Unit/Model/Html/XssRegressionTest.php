@@ -241,6 +241,6 @@ class XssRegressionTest extends TestCase
 
         self::assertStringStartsWith('/', $href);
         self::assertNotSame('/', substr($href, 1, 1));
-        self::assertNotSame('\\\\', substr($href, 1, 1));
+        self::assertNotSame('\\', substr($href, 1, 1), 'a backslash here is authority-relative');
     }
 }
