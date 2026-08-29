@@ -14,7 +14,7 @@ use Magento\Framework\Controller\ResultInterface;
 use Muon\DevProfilerBoard\Model\Board\LedgerResolver;
 use Muon\DevProfilerBoard\Model\Html\BoardPage;
 use Muon\DevProfilerBoard\Model\Html\ComparePanel;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Model\Response\BoardResponse;
 use Muon\DevProfilerBoard\Model\Run\RunDiff;
 use Muon\DevProfilerBoard\Model\Run\RunSelector;
@@ -36,7 +36,7 @@ class Index implements HttpGetActionInterface
      * @param \Muon\DevProfilerBoard\Model\Run\RunDiff $diff
      * @param \Muon\DevProfilerBoard\Model\Html\ComparePanel $panel
      * @param \Muon\DevProfilerBoard\Model\Html\BoardPage $page
-     * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
+     * @param \Muon\DevProfilerBoard\Model\Url\UrlBuilder $urls
      * @param \Muon\DevProfilerBoard\Model\Response\BoardResponse $response
      * @param \Muon\DevProfilerBoard\Model\Board\LedgerResolver $ledgers
      */

@@ -16,7 +16,7 @@ use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Data\Form\FormKey\Validator as FormKeyValidator;
 use Muon\DevProfiler\Model\Store\RunStore;
 use Muon\DevProfilerBoard\Controller\Runs\Clear;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Model\Response\BoardResponse;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -85,6 +85,7 @@ class ClearTest extends TestCase
      */
     public function testTheFormKeyIsValidatedRatherThanWaived(): void
     {
+        $this->response->method('isOpen')->willReturn(true);
         $request = $this->createMock(RequestInterface::class);
 
         $this->formKeyValidator->expects(self::once())
@@ -97,6 +98,7 @@ class ClearTest extends TestCase
 
     public function testAValidFormKeyIsAccepted(): void
     {
+        $this->response->method('isOpen')->willReturn(true);
         $request = $this->createMock(RequestInterface::class);
         $this->formKeyValidator->method('validate')->willReturn(true);
 
@@ -110,6 +112,8 @@ class ClearTest extends TestCase
     public function testValidateForCsrfNeverDefersToTheFrameworkDefault(): void
     {
         $request = $this->createMock(RequestInterface::class);
+
+        $this->response->method('isOpen')->willReturn(true);
 
         foreach ([true, false] as $answer) {
             $validator = $this->createMock(FormKeyValidator::class);
@@ -160,5 +164,24 @@ class ClearTest extends TestCase
         $this->redirect->expects(self::once())->method('setUrl')->willReturnSelf();
 
         self::assertSame($this->redirect, $this->controller()->execute());
+    }
+
+    /**
+     * FrontController validates before it dispatches, so execute()'s own gate check is never
+     * reached on this path. Without the gate here, a form-key-less cross-site POST to a
+     * production-mode instance answered 302 to the board index and planted "Invalid form key" in an
+     * arbitrary shopper's session — announcing the module and writing into a stranger's session.
+     *
+     * Returning true is safe precisely because execute() then refuses with a 404.
+     */
+    public function testAClosedBoardDoesNotAnswerACrossSitePostAtAll(): void
+    {
+        $this->response->method('isOpen')->willReturn(false);
+        $this->formKeyValidator->expects(self::never())->method('validate');
+
+        self::assertTrue(
+            $this->controller()->validateForCsrf($this->createMock(RequestInterface::class)),
+            'the gate answers, and execute() returns the plain 404'
+        );
     }
 }

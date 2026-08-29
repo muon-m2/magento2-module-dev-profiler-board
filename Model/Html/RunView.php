@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Html;
 
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
+
 /**
  * Assembles one run page: verdict, evidence strip, tab strip, panels.
  *
@@ -26,7 +28,7 @@ class RunView
 
     /**
      * @param \Muon\DevProfilerBoard\Model\Html\Tag $tag
-     * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
+     * @param \Muon\DevProfilerBoard\Model\Url\UrlBuilder $urls
      * @param \Muon\DevProfilerBoard\Model\Html\VerdictBanner $banner
      * @param \Muon\DevProfilerBoard\Model\Html\OverviewPanel $overview
      * @param \Muon\DevProfilerBoard\Model\Html\FallbackPanel $fallback

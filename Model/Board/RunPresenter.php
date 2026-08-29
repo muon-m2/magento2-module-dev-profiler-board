@@ -188,6 +188,20 @@ class RunPresenter
         // are one step from the trap the collector has a dedicated message for: the page cache is
         // still warm, so the next load resolves no files and the board looks broken. Say so here,
         // where they are, rather than letting them find out two reloads later.
+        // A clear that was refused says so. Magento queues the message for the message manager, but
+        // this page is a Result\Raw with no message area and Magento_Theme's MessagePlugin drains
+        // the queue into a cookie nothing here reads — so without this the redirect was silent.
+        if ($request->getParam('rejected') === 'form_key') {
+            return $this->page->notice(
+                'Nothing was cleared',
+                'That request did not carry a valid form key, so the ring was left alone.',
+                'Reload the board and use the Clear button again — the key is bound to the page it '
+                . 'was rendered on, so a stale tab or a resubmitted POST will always be refused.',
+                'Back to the board',
+                $this->ledgers->resolve()
+            );
+        }
+
         $cleared = $request->getParam('cleared');
 
         if ($cleared !== null) {

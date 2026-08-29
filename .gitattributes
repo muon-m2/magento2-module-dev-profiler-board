@@ -26,3 +26,16 @@
 *.zip binary
 *.gz  binary
 *.phar binary
+
+# Keep the Composer dist to what a consumer actually needs.
+#
+# Test code and CI config are dead weight in every consumer's vendor/, and because the PSR-4 root
+# is the module root the Test classes land in the optimised classmap too.
+#
+# docs/ and CHANGELOG.md deliberately DO ship: this is a developer tool, the reference is the
+# reason to keep it around, and the README links to both.
+/Test           export-ignore
+/.github        export-ignore
+/phpmd.xml      export-ignore
+/.gitattributes export-ignore
+/.gitignore     export-ignore

@@ -65,7 +65,7 @@ class Feed implements HttpGetActionInterface
                 'matching' => $this->runs->matching($filter),
                 'filtered' => $filter->isActive(),
             ],
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+            JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
         );
 
         return $this->response->json($encoded === false ? '{"runs":[],"total":0,"matching":0,"filtered":false}' : $encoded);

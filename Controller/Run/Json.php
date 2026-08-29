@@ -49,7 +49,7 @@ class Json implements HttpGetActionInterface
             return $this->response->notFound('No such run.');
         }
 
-        $encoded = json_encode($run, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $encoded = json_encode($run, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_UNESCAPED_UNICODE);
 
         return $this->response->json($encoded === false ? '{}' : $encoded);
     }

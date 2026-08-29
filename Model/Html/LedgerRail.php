@@ -8,8 +8,8 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Html;
 
-use Magento\Framework\Data\Form\FormKey;
 use Muon\DevProfilerBoard\Model\Run\RunFilter;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 
 /**
@@ -39,15 +39,13 @@ class LedgerRail
     /**
      * @param \Muon\DevProfilerBoard\Model\Html\Tag $tag
      * @param \Muon\DevProfilerBoard\Model\Html\Widgets $ui
-     * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
-     * @param \Magento\Framework\Data\Form\FormKey $formKey
+     * @param \Muon\DevProfilerBoard\Model\Url\UrlBuilder $urls
      * @param \Muon\DevProfilerBoard\Model\Html\FilterPanel $filters
      */
     public function __construct(
         private readonly Tag $tag,
         private readonly Widgets $ui,
         private readonly UrlBuilder $urls,
-        private readonly FormKey $formKey,
         private readonly FilterPanel $filters
     ) {
     }
@@ -56,6 +54,12 @@ class LedgerRail
      * @param list<array<string,mixed>> $rows From RunSelector::feed().
      * @param string|null $selected Token of the run currently open.
      * @param array<string,string|int|float|null> $state Analysis state to carry into each link.
+     * @param \Muon\DevProfilerBoard\Model\Run\RunFilter|null $filter Active filter, for the chip row.
+     * @param int $matching How many runs match across the whole ring, not just this page.
+     * @param int $total How many runs the ring holds.
+     * @param string $formKey For the Clear form. Passed in rather than injected: FormKey is
+     *        session-backed, and materialising it — which starts a session — is a side effect a
+     *        markup builder has no business causing.
      * @return string
      */
     public function render(
@@ -64,7 +68,8 @@ class LedgerRail
         array $state = [],
         ?RunFilter $filter = null,
         int $matching = 0,
-        int $total = 0
+        int $total = 0,
+        string $formKey = ''
     ): string {
         $head = $this->tag->tag(
             'div',
@@ -97,7 +102,7 @@ class LedgerRail
         return $head
             . ($filter === null ? '' : $this->filters->render($filter, $matching, $total))
             . $this->tag->tag('ul', ['class' => 'rail-list', 'data-ledger' => 'true'], $items)
-            . $this->foot();
+            . $this->foot($formKey);
     }
 
     /**
@@ -174,7 +179,7 @@ class LedgerRail
     /**
      * @return string
      */
-    private function foot(): string
+    private function foot(string $formKey): string
     {
         return $this->tag->tag(
             'div',
@@ -183,6 +188,10 @@ class LedgerRail
                 'class' => 'btn',
                 'type' => 'button',
                 'data-compare-toggle' => 'true',
+                // Shipped from the server, like the Pause live button beside it. board.js flips it,
+                // but a toggle that only gains its state once JavaScript has run announces nothing
+                // to a reader who arrives before that.
+                'aria-pressed' => 'false',
             ], 'Compare two')
             . $this->tag->tag('button', [
                 'class' => 'btn',
@@ -190,7 +199,7 @@ class LedgerRail
                 'data-live-toggle' => 'true',
                 'aria-pressed' => 'false',
             ], 'Pause live')
-            . $this->clearForm()
+            . $this->clearForm($formKey)
         );
     }
 
@@ -204,7 +213,7 @@ class LedgerRail
      *
      * @return string
      */
-    private function clearForm(): string
+    private function clearForm(string $formKey): string
     {
         return $this->tag->tag(
             'form',
@@ -217,7 +226,7 @@ class LedgerRail
             $this->tag->tag('input', [
                 'type' => 'hidden',
                 'name' => 'form_key',
-                'value' => $this->formKey->getFormKey(),
+                'value' => $formKey,
             ])
             . $this->tag->tag('button', ['class' => 'btn btn-danger', 'type' => 'submit'], 'Clear runs')
         );

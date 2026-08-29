@@ -34,7 +34,13 @@ class Tag
     /**
      * Attributes holding a URL, which needs escapeUrl() and *only* escapeUrl().
      *
-     * Magento's escapeUrl() already applies escapeHtmlAttr() after sanitising the URL. Escaping the
+     * Magento's escapeUrl() applies escapeHtml() — not escapeHtmlAttr() — after sanitising the
+     * URL. That is quoted-attribute-safe but NOT unquoted-attribute-safe, so a single
+     * escapeUrl() pass is only sufficient because attributes() always emits name="value"
+     * with the quotes. Do not emit an unquoted URL attribute on the strength of this.
+     *
+     * Attribute and element NAMES are concatenated raw and must always be trusted literals,
+     * never derived from a run or a request. Only values are escaped. Escaping the
      * result a second time turns the "&" between query parameters into "&amp;amp;", which a browser
      * decodes to a literal "&amp;" — so "?slow=10&nplus1=3" arrives as a single parameter named
      * "slow" with the rest glued to its value, and every threshold control on the board silently

@@ -9,7 +9,7 @@ declare(strict_types=1);
 namespace Muon\DevProfilerBoard\Model\Run;
 
 use Muon\DevProfiler\Model\Analysis\CacheVerdict;
-use Muon\DevProfiler\Model\Store\RunStore;
+use Muon\DevProfiler\Api\RunReaderInterface;
 
 /**
  * Answers "which run is being looked at" and "what is in the ledger".
@@ -46,12 +46,12 @@ class RunSelector
     private array $scanned = [];
 
     /**
-     * @param \Muon\DevProfiler\Model\Store\RunStore $store
+     * @param \Muon\DevProfiler\Api\RunReaderInterface $store
      * @param \Muon\DevProfiler\Model\Analysis\CacheVerdict $verdict
-     * @param int $feedLimit Ledger rows per request; RunStore's ring caps it further.
+     * @param int $feedLimit Ledger rows per request; the store's ring caps it further.
      */
     public function __construct(
-        private readonly RunStore $store,
+        private readonly RunReaderInterface $store,
         private readonly CacheVerdict $verdict,
         private readonly int $feedLimit = 25
     ) {
@@ -113,6 +113,7 @@ class RunSelector
      * Ledger rows, newest first.
      *
      * @param int|null $limit Clamped to feedLimit; null means feedLimit.
+     * @param \Muon\DevProfilerBoard\Model\Run\RunFilter|null $filter Null means unfiltered.
      * @return list<array<string,mixed>>
      */
     public function feed(?int $limit = null, ?RunFilter $filter = null): array
@@ -257,7 +258,7 @@ class RunSelector
     /**
      * One top-level section of a stored run, guaranteed to be an array.
      *
-     * A run file can be hand-edited or half-written; RunStore already returns null for anything it
+     * A run file can be hand-edited or half-written; the store already returns null for anything it
      * cannot decode, but a decodable document with a missing section must not take the ledger down.
      *
      * @param array<string,mixed> $run

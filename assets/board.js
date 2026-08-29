@@ -121,6 +121,7 @@
         var paused = false;
         var known = {};
         var timer = null;
+        var failures = 0;
 
         Array.prototype.forEach.call(list.querySelectorAll('[data-token]'), function (row) {
             known[row.getAttribute('data-token')] = true;
@@ -234,10 +235,23 @@
                         counter.textContent = ringLabel(data.runs.length, data.total, data.matching, data.filtered);
                     }
                 })
+                .then(function () {
+                    failures = 0;
+                })
                 .catch(function () {
                     // A failed poll is not worth a console error every four seconds; the next one
-                    // may well succeed, and the page is still showing a valid capture.
+                    // may well succeed, and the page is still showing a valid capture. It is worth
+                    // slowing down, though: if the instance behind an open tab goes away — a
+                    // container restart, an FPM bounce — a fixed 4s retry hammers it for as long as
+                    // the tab stays open.
+                    failures++;
                 });
+        }
+
+        // Doubles from POLL_MS up to a minute after consecutive failures, and resets on the first
+        // success.
+        function interval() {
+            return Math.min(POLL_MS * Math.pow(2, Math.min(failures, 4)), 60000);
         }
 
         function tick() {
@@ -247,7 +261,7 @@
                 refresh();
             }
 
-            timer = window.setTimeout(tick, POLL_MS);
+            timer = window.setTimeout(tick, interval());
         }
 
         if (toggle) {

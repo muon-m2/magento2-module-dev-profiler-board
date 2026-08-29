@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Html;
 
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
+
 /**
  * The page frame.
  *
@@ -27,7 +29,7 @@ class Document
 {
     /**
      * @param \Muon\DevProfilerBoard\Model\Html\Tag $tag
-     * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
+     * @param \Muon\DevProfilerBoard\Model\Url\UrlBuilder $urls
      */
     public function __construct(
         private readonly Tag $tag,

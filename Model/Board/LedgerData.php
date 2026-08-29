@@ -26,12 +26,16 @@ class LedgerData
      * @param int $matching How many runs match across the whole ring, not just this page.
      * @param int $total How many runs the ring holds.
      * @param string $store Store code for the top bar; empty when it cannot be resolved.
+     * @param string $formKey For the Clear form. Resolved here rather than inside the renderer,
+     *        because FormKey is session-backed and materialising it is a side effect that a markup
+     *        builder has no business causing.
      */
     public function __construct(
         public readonly array $rows = [],
         public readonly int $matching = 0,
         public readonly int $total = 0,
-        public readonly string $store = ''
+        public readonly string $store = '',
+        public readonly string $formKey = ''
     ) {
     }
 }

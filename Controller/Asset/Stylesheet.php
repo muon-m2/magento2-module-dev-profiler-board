@@ -37,6 +37,9 @@ class Stylesheet implements HttpGetActionInterface
             return $this->response->notFound();
         }
 
-        return $this->response->css($this->assets->read(AssetReader::CSS) ?? '');
+        return $this->response->css(
+            $this->assets->read(AssetReader::CSS) ?? '',
+            $this->assets->fingerprint(AssetReader::CSS)
+        );
     }
 }

@@ -37,6 +37,9 @@ class Script implements HttpGetActionInterface
             return $this->response->notFound();
         }
 
-        return $this->response->javascript($this->assets->read(AssetReader::JS) ?? '');
+        return $this->response->javascript(
+            $this->assets->read(AssetReader::JS) ?? '',
+            $this->assets->fingerprint(AssetReader::JS)
+        );
     }
 }
