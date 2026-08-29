@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Run;
 
+use Muon\DevProfiler\Model\Analysis\CacheVerdict;
+
 /**
  * Which runs the ledger shows.
  *
@@ -27,7 +29,13 @@ namespace Muon\DevProfilerBoard\Model\Run;
 class RunFilter
 {
     /** The verdicts CacheVerdict can produce; anything else is not a filter, it is a typo. */
-    public const VERDICTS = ['hit', 'miss', 'uncacheable', 'unknown', 'n/a'];
+    public const VERDICTS = [
+        CacheVerdict::HIT,
+        CacheVerdict::MISS,
+        CacheVerdict::UNCACHEABLE,
+        CacheVerdict::UNKNOWN,
+        CacheVerdict::NOT_APPLICABLE,
+    ];
 
     /** HTTP methods worth offering. A request with any other method never reaches a Magento route. */
     public const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];

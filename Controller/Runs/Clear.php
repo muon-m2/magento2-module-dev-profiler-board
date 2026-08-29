@@ -23,7 +23,7 @@ use Muon\DevProfilerBoard\Model\Response\BoardResponse;
  * Empties the ring.
  *
  * The board's **only** mutation, and the only reason it has a POST action at all. It exists because
- * the collector's own console output tells a reader to run `make profile-clear` before capturing a
+ * the collector's own console output tells a reader to run `bin/magento muon:profile:clear` before capturing a
  * cold request — a documented workflow the board could otherwise not perform, which left a seam
  * between reading here and acting in a terminal.
  *

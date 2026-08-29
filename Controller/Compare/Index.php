@@ -11,6 +11,7 @@ namespace Muon\DevProfilerBoard\Controller\Compare;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\ResultInterface;
+use Muon\DevProfilerBoard\Model\Board\LedgerResolver;
 use Muon\DevProfilerBoard\Model\Html\BoardPage;
 use Muon\DevProfilerBoard\Model\Html\ComparePanel;
 use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
@@ -37,6 +38,7 @@ class Index implements HttpGetActionInterface
      * @param \Muon\DevProfilerBoard\Model\Html\BoardPage $page
      * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
      * @param \Muon\DevProfilerBoard\Model\Response\BoardResponse $response
+     * @param \Muon\DevProfilerBoard\Model\Board\LedgerResolver $ledgers
      */
     public function __construct(
         private readonly RequestInterface $request,
@@ -46,7 +48,8 @@ class Index implements HttpGetActionInterface
         private readonly ComparePanel $panel,
         private readonly BoardPage $page,
         private readonly UrlBuilder $urls,
-        private readonly BoardResponse $response
+        private readonly BoardResponse $response,
+        private readonly LedgerResolver $ledgers
     ) {
     }
 
@@ -66,14 +69,21 @@ class Index implements HttpGetActionInterface
         if ($left === null || $right === null) {
             return $this->response->html($this->page->render(
                 'Compare runs — Muon Profiler',
-                $this->panel->render($this->emptyDiff(), $action)
+                $this->panel->render($this->emptyDiff(), $action),
+                null,
+                [],
+                null,
+                $this->ledgers->resolve()
             ));
         }
 
         return $this->response->html($this->page->render(
             'Compare runs — Muon Profiler',
             $this->panel->render($this->diff->compare($left, $right), $action),
-            (string)($right['token'] ?? '')
+            (string)($right['token'] ?? ''),
+            [],
+            null,
+            $this->ledgers->resolve()
         ));
     }
 

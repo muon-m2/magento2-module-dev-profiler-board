@@ -20,6 +20,11 @@ namespace Muon\DevProfilerBoard\Model\Run;
  *
  *  - `//evil.com/x` — a protocol-relative URL. It looks like a path, escapes cleanly, and navigates
  *    to another origin. A request to that path is recorded verbatim, so it is trivial to plant.
+ *  - `/\evil.com/x` — the same attack with a backslash. In the WHATWG URL parser's relative-slash
+ *    state a `\` routes into special-authority-ignore-slashes exactly as `/` does, so browsers
+ *    resolve this to another origin too, while `escapeUrl()` leaves the backslash untouched. It is
+ *    worse than the `//` form, because `/\evil.example\@muon.localhost/` renders with the real
+ *    host at the end and reads as local.
  *  - `https://…`, `javascript:…` — anything carrying a scheme. Escaper strips the dangerous ones,
  *    but a link off this instance is not what the reader is being offered here either way.
  *
@@ -30,9 +35,17 @@ namespace Muon\DevProfilerBoard\Model\Run;
 class RequestUrl
 {
     /**
-     * One leading slash, and the next character is not another slash.
+     * One leading slash, and the next character is neither another slash nor a backslash.
      */
-    private const LOCAL_PATH = '#^/(?!/)#';
+    private const LOCAL_PATH = '#^/(?![/\\\\])#';
+
+    /**
+     * A backslash anywhere in the first segment is refused outright.
+     *
+     * Browsers normalise `\` to `/` while resolving, so `/foo\@evil.example/` reaches a different
+     * origin than the string suggests. Nothing legitimate in a Magento request URI needs one.
+     */
+    private const FIRST_SEGMENT_BACKSLASH = '#^/[^/]*\\\\#';
 
     /**
      * The URL as a followable link, or null when it must stay plain text.
@@ -46,6 +59,10 @@ class RequestUrl
             return null;
         }
 
-        return preg_match(self::LOCAL_PATH, $url) === 1 ? $url : null;
+        if (preg_match(self::LOCAL_PATH, $url) !== 1) {
+            return null;
+        }
+
+        return preg_match(self::FIRST_SEGMENT_BACKSLASH, $url) === 1 ? null : $url;
     }
 }

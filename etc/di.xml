@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!--
+        Keep the board's own requests out of the ring. Without this, browsing the board — and the
+        feed poll behind it — evicts the runs being inspected.
+
+        GLOBAL, not frontend. Array arguments merge item-by-item within one scope, but across scopes
+        Config::extend() array_replace()s the whole `arguments` entry — so a frontend-scoped
+        contribution silently discards anything a third module contributed from global di.xml, where
+        RunFinalizer is also constructed (StaticResourceWriter builds it there). Every consumer has
+        to write into the same scope for the registry to behave like a registry. The frontend
+        placement bought nothing: a request that never routes has no full action name to match.
+
+        The list is checked against etc/frontend/routes.xml and Controller/ by
+        Test\Unit\Controller\ExcludedActionsTest, not by review — its failure mode is silent
+        eviction of the evidence the reader opened the board to see.
+    -->
+    <type name="Muon\DevProfiler\Model\Run\RunFinalizer">
+        <arguments>
+            <argument name="excludedActions" xsi:type="array">
+                <item name="board_index" xsi:type="string">muon_profiler_index_index</item>
+                <item name="board_run_view" xsi:type="string">muon_profiler_run_view</item>
+                <item name="board_run_json" xsi:type="string">muon_profiler_run_json</item>
+                <item name="board_run_markdown" xsi:type="string">muon_profiler_run_markdown</item>
+                <item name="board_runs_feed" xsi:type="string">muon_profiler_runs_feed</item>
+                <item name="board_runs_clear" xsi:type="string">muon_profiler_runs_clear</item>
+                <item name="board_compare_index" xsi:type="string">muon_profiler_compare_index</item>
+                <item name="board_asset_css" xsi:type="string">muon_profiler_asset_stylesheet</item>
+                <item name="board_asset_js" xsi:type="string">muon_profiler_asset_script</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

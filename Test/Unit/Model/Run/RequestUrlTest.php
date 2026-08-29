@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Muon\DevProfilerBoard\Test\Unit\Model\Run;
 
 use Muon\DevProfilerBoard\Model\Run\RequestUrl;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -99,5 +100,61 @@ class RequestUrlTest extends TestCase
     {
         self::assertNull($this->urls->openable('//evil.example/x'), 'not linkable');
         // The panel falls back to rendering the recorded value as escaped text; see OverviewPanel.
+    }
+
+    /**
+     * The bypass that shipped in 1.0.0.
+     *
+     * LOCAL_PATH blocked `//` and nothing else. In the WHATWG URL parser's relative-slash state a
+     * backslash routes into special-authority-ignore-slashes exactly as a slash does, so browsers
+     * resolve `/\evil.example/` to another origin — and `escapeUrl()` leaves the backslash alone.
+     * The second form is the dangerous one: it renders with the real host at the end and reads as
+     * a local path.
+     *
+     * @return list<array{string}>
+     */
+    public static function backslashBypasses(): array
+    {
+        return [
+            ['/\\evil.example/'],
+            ['/\\evil.example\\@muon.localhost/'],
+            ['/\\\\evil.example/'],
+            ['/\\'],
+        ];
+    }
+
+    /**
+     * @param string $url
+     * @return void
+     */
+    #[DataProvider('backslashBypasses')]
+    public function testABackslashInTheFirstSegmentIsRefused(string $url): void
+    {
+        self::assertNull((new RequestUrl())->openable($url));
+    }
+
+    /**
+     * The counterweight: the guard must not start refusing the ordinary paths it exists to allow.
+     *
+     * @return list<array{string}>
+     */
+    public static function ordinaryPaths(): array
+    {
+        return [
+            ['/en-us/nb-home'],
+            ['/en-us/catalog/product/view/id/42'],
+            ['/en-us/catalogsearch/result/?q=lamp'],
+            ['/'],
+        ];
+    }
+
+    /**
+     * @param string $url
+     * @return void
+     */
+    #[DataProvider('ordinaryPaths')]
+    public function testAnOrdinaryPathIsStillOpenable(string $url): void
+    {
+        self::assertSame($url, (new RequestUrl())->openable($url));
     }
 }

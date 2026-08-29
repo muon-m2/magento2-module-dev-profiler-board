@@ -78,7 +78,7 @@ class Widgets
      * @param string|null $count
      * @return string
      */
-    public function heading(string $text, ?string $count = null): string
+    public function heading(string $text, ?string $count = null, string $level = 'h2'): string
     {
         $inner = $this->tag->text($text);
 
@@ -86,7 +86,12 @@ class Widgets
             $inner .= ' ' . $this->eyebrow($count);
         }
 
-        return $this->tag->tag('h3', [], $inner);
+        // Panel tops are h2 under the page's h1; a sub-section inside a panel passes 'h3'. Every
+        // heading used to be h3 with no h1 or h2 above it, so a screen-reader user navigating by
+        // heading landed mid-outline with nothing to orient against.
+        $tag = in_array($level, ['h2', 'h3', 'h4'], true) ? $level : 'h2';
+
+        return $this->tag->tag($tag, [], $inner);
     }
 
     /**
@@ -133,14 +138,16 @@ class Widgets
      * @param list<int> $numericColumns Column indexes to right-align with tabular figures.
      * @return string
      */
-    public function table(array $headers, array $rows, array $numericColumns = []): string
+    public function table(array $headers, array $rows, array $numericColumns = [], string $caption = ''): string
     {
         $numeric = array_flip($numericColumns);
 
         $head = '';
 
         foreach ($headers as $header) {
-            $head .= $this->tag->tag('th', [], $this->tag->text($header));
+            // scope="col" rather than relying on implicit header-row inference, which is not
+            // guaranteed across screen readers.
+            $head .= $this->tag->tag('th', ['scope' => 'col'], $this->tag->text($header));
         }
 
         $body = '';
@@ -155,10 +162,17 @@ class Widgets
             $body .= $this->tag->tag('tr', [], $cells);
         }
 
+        // A caption, visually hidden, so table navigation announces what the table is rather than
+        // dropping the reader into unlabelled rows.
+        $inner = $caption === ''
+            ? ''
+            : $this->tag->tag('caption', ['class' => 'sr-only'], $this->tag->text($caption));
+
         $table = $this->tag->tag(
             'table',
             [],
-            $this->tag->tag('thead', [], $this->tag->tag('tr', [], $head))
+            $inner
+            . $this->tag->tag('thead', [], $this->tag->tag('tr', [], $head))
             . $this->tag->tag('tbody', [], $body)
         );
 

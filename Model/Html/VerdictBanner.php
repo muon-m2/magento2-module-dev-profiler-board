@@ -85,7 +85,7 @@ class VerdictBanner
         ], static fn (string $part): bool => trim($part) !== '');
 
         // Verbatim: this line carries the run token, and the reader's next move is often to copy it
-        // into `make profile t=…`. Uppercasing it for looks would hand them a token that does not
+        // into `bin/magento muon:profile:show t=…`. Uppercasing it for looks would hand them a token that does not
         // exist.
         return $this->ui->eyebrowVerbatim(implode(' · ', $parts));
     }
@@ -154,7 +154,7 @@ class VerdictBanner
             [
                 'Store',
                 (string)($context['store_code'] ?? '—'),
-                $context['store_id'] === null ? null : sprintf('id %d', (int)$context['store_id']),
+                ($context['store_id'] ?? null) === null ? null : sprintf('id %d', (int)$context['store_id']),
             ],
         ];
 

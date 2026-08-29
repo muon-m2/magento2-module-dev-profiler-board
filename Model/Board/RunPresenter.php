@@ -11,9 +11,11 @@ namespace Muon\DevProfilerBoard\Model\Board;
 use Magento\Framework\App\RequestInterface;
 use Muon\DevProfilerBoard\Model\Analysis\RunAnalysis;
 use Muon\DevProfilerBoard\Model\Analysis\Thresholds;
+use Muon\DevProfilerBoard\Model\Board\LedgerResolver;
 use Muon\DevProfilerBoard\Model\Html\BoardPage;
 use Muon\DevProfilerBoard\Model\Html\RunView;
 use Muon\DevProfilerBoard\Model\Run\FilterReader;
+use Muon\DevProfilerBoard\Model\Run\RunFilter;
 use Muon\DevProfilerBoard\Model\Run\RunSelector;
 use Muon\DevProfilerBoard\Model\Run\TokenFilter;
 
@@ -46,7 +48,8 @@ class RunPresenter
         private readonly RunAnalysis $analysis,
         private readonly RunView $view,
         private readonly BoardPage $page,
-        private readonly FilterReader $filters
+        private readonly FilterReader $filters,
+        private readonly LedgerResolver $ledgers
     ) {
     }
 
@@ -64,16 +67,36 @@ class RunPresenter
             return $this->emptyPage($request);
         }
 
+        // A newer collector may have reshaped the stored document. Every read below is defensively
+        // guarded, so such a run would render as empty panels and zeroed counters rather than fail
+        // — a capped answer presenting itself as a complete one, which is the failure this tool
+        // exists to avoid. Say so instead.
+        if (!$this->runs->isSupported($run)) {
+            return $this->page->notice(
+                'Captured by a newer profiler',
+                sprintf(
+                    'This run reports schema %s; this board understands %d.',
+                    (string)($run['schema'] ?? '?'),
+                    RunSelector::SUPPORTED_SCHEMA
+                ),
+                'Update Muon_DevProfilerBoard, or read the run with bin/magento muon:profile:show.',
+                null,
+                $this->ledgers->resolve()
+            );
+        }
+
         $state = $this->state($request);
         $analysis = $this->analysis->analyse($run, $this->thresholds->fromRequest($request));
         $token = (string)($run['token'] ?? '');
+        $filter = $this->filters->fromRequest($request);
 
         return $this->page->render(
             'Run ' . $token . ' — Muon Profiler',
             $this->view->render($run, $analysis, $state),
             $token,
             $this->ledgerState($state),
-            $this->filters->fromRequest($request)
+            $filter,
+            $this->ledgers->resolve($filter)
         );
     }
 
@@ -156,7 +179,8 @@ class RunPresenter
                 'No run with that token is in the ring.',
                 'The ring keeps the most recent runs and drops the oldest as new ones arrive, so a '
                 . 'link to a specific run goes stale on its own. Nothing is wrong.',
-                'Open the most recent run'
+                'Open the most recent run',
+                $this->ledgers->resolve()
             );
         }
 
@@ -172,7 +196,9 @@ class RunPresenter
                 sprintf('%d run%s deleted. Reload a storefront page to capture a new one.', (int)$cleared, (int)$cleared === 1 ? '' : 's'),
                 'For a cold capture, flush the page cache first — otherwise the next load is served '
                 . 'from it, resolves no files and loads no theme, and the board will look empty for a '
-                . 'reason that has nothing to do with clearing: bin/magento cache:flush'
+                . 'reason that has nothing to do with clearing: bin/magento cache:flush',
+                null,
+                $this->ledgers->resolve()
             );
         }
 
@@ -180,7 +206,9 @@ class RunPresenter
             'No runs recorded yet',
             'Load a storefront page, then come back.',
             'If runs never appear, confirm the web request runs in developer mode — MAGE_MODE in the '
-            . 'FastCGI params can differ from what bin/magento deploy:mode:show reports for the CLI.'
+            . 'FastCGI params can differ from what bin/magento deploy:mode:show reports for the CLI.',
+            null,
+            $this->ledgers->resolve()
         );
     }
 

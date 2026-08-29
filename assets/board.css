@@ -27,7 +27,7 @@
     --rule: #232A33;
     --ink: #D7DEE7;
     --ink-dim: #8A97A6;
-    --ink-faint: #5C6875;
+    --ink-faint: #7C8A99;
     --v-hit: #4FB8A0;
     --v-miss: #E0A94A;
     --v-bad: #E06C6C;
@@ -48,11 +48,11 @@
         --rule: #DFE3E9;
         --ink: #1C232B;
         --ink-dim: #5A6673;
-        --ink-faint: #8B96A3;
-        --v-hit: #1E8A73;
-        --v-miss: #A9761A;
+        --ink-faint: #626D7A;
+        --v-hit: #157A64;
+        --v-miss: #8A5E10;
         --v-bad: #C0392F;
-        --v-none: #6E7B8B;
+        --v-none: #5A6674;
         --accent: #5B45D6;
         --accent-soft: rgba(91, 69, 214, .08);
     }
@@ -185,6 +185,20 @@ body.single .shell {
 }
 
 /* ── ledger rail ───────────────────────────────────────────────────────── */
+/* Present to assistive technology, absent from the layout. Used for the page heading and table
+   captions, both of which the sighted reader already has from the top bar and the panel title. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 .rail {
     border-right: 1px solid var(--rule);
     background: var(--panel);

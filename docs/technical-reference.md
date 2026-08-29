@@ -1,6 +1,6 @@
 # Muon_DevProfilerBoard — Technical Reference
 
-Module: `Muon_DevProfilerBoard` · Package `muon/module-dev-profiler-board` 1.1.0 · OSL-3.0
+Module: `Muon_DevProfilerBoard` · Package `muon/module-dev-profiler-board` 1.2.0 · OSL-3.0
 Requires PHP `~8.3.0 || ~8.4.0 || ~8.5.0`, Magento 2.4.9, `muon/module-dev-profiler ^1.2`.
 
 ## Architecture

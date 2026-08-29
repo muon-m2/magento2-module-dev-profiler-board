@@ -18,7 +18,7 @@ use Muon\DevProfiler\Model\Analysis\ShadowResolver;
  *
  * Every classification here is delegated, not reimplemented. That is a correctness requirement
  * rather than a preference: if the board decided for itself which candidates were shadowed or which
- * shape was an N+1, it could disagree with `make profile` about the same token, and two tools
+ * shape was an N+1, it could disagree with `bin/magento muon:profile:show` about the same token, and two tools
  * disagreeing about the same evidence is worse than having only one.
  *
  * This is also where the expensive work is confined. ShadowResolver stats candidate directories on
@@ -99,7 +99,7 @@ class RunAnalysis
 
         // present() = collapse repeat lookups, then rank shadowed first. Shared with the console
         // renderer on purpose: without it the board showed four identical etc/view.xml rows where
-        // `make profile` shows one, and a reader comparing the two surfaces could not tell which
+        // `bin/magento muon:profile:show` shows one, and a reader comparing the two surfaces could not tell which
         // was lying.
         return $this->resolutions->present($this->shadowResolver->classify($resolutions, $themePath));
     }

@@ -14,14 +14,14 @@ https://muon.localhost/en-us/muon_profiler/
 
 ## Why it exists
 
-The profiler is headless by design and reads back through `make profile`. That is the right shape
+The profiler is headless by design and reads back through `bin/magento muon:profile:show`. That is the right shape
 for the capture side and an awkward one for the reading side: choosing a token by hand, re-running
 the command to change one threshold, and holding two captures in your head to compare them. The
 evidence was already complete; this is a second way to read it.
 
 The board does **not** replace the CLI, and the two can never disagree — every classification comes
 from the same read-time classes (`ShadowResolver`, `CacheVerdict`, `QueryAnalyzer`,
-`ResolutionSet`), so `make profile t=abc123` and `/muon_profiler/run/view?token=abc123` are the same
+`ResolutionSet`), so `bin/magento muon:profile:show abc123` and `/muon_profiler/run/view?token=abc123` are the same
 analysis in two presentations.
 
 ## Install

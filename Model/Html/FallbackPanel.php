@@ -14,7 +14,7 @@ namespace Muon\DevProfilerBoard\Model\Html;
  * This is the question the profiler exists to answer, so the panel renders it the way the CLI does:
  * a ladder per file, the winner marked, every later copy struck through. The board should read as
  * the command grown up rather than as a different product — somebody who has been using
- * `make profile --shadowed-only` should not have to learn a second vocabulary.
+ * `bin/magento muon:profile:show --shadowed-only` should not have to learn a second vocabulary.
  *
  * Filtering follows the CLI exactly, including the parts that look like details: probe misses are
  * counted rather than listed, because Magento is allowed not to find a file and listing those
@@ -191,7 +191,7 @@ class FallbackPanel
             'div',
             ['class' => 'ladder-key'],
             $this->tag->text($entry['file'] ?? '?')
-            . ($entry['module'] ? ' ' . $this->ui->chip($entry['module']) : '')
+            . (($entry['module'] ?? null) ? ' ' . $this->ui->chip((string)$entry['module']) : '')
             . ' ' . $this->ui->chip((string)($entry['type'] ?? '?'))
             // Repeat lookups are collapsed into one ladder; the count keeps that visible rather
             // than quietly implying the file was resolved once.
