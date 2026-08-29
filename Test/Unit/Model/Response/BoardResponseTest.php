@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Test\Unit\Model\Response;
 
+require_once __DIR__ . '/../../Stub/generated.php';
+
 use Magento\Framework\Controller\Result\Raw;
 use Magento\Framework\Controller\Result\RawFactory;
 use Muon\DevProfilerBoard\Model\Access\BoardGate;

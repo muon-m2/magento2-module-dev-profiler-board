@@ -46,6 +46,11 @@ Closes the Medium findings from the 2026-08-28 release-readiness audit.
   controller without an entry gets recorded, and an open board polls every four seconds, so it
   evicts the runs the reader is looking at. Both sides are now read from disk and diffed.
 
+- **`Test/Unit/Stub/generated.php`.** `RawFactory` has no source file — the framework ships `Raw.php`
+  and generates the factory into `generated/code` on demand — so a test that doubles it passes on a
+  full install and errors in CI. Declared only when the real class is absent, so the tests run
+  everywhere instead of being skipped in CI.
+
 - **Tests for the classes that had none**: `BoardResponse` (the no-store and noindex headers are a
   stated privacy control), `Widgets` and `UrlBuilder` (shared by every panel), `RunView` (the one
   place a raw `?panel=` decides what renders), `BoardPage`, and the panel branching that
