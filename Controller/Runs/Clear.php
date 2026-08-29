@@ -16,7 +16,7 @@ use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Data\Form\FormKey\Validator as FormKeyValidator;
 use Muon\DevProfiler\Model\Store\RunStore;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Model\Response\BoardResponse;
 
 /**
@@ -40,7 +40,7 @@ class Clear implements HttpPostActionInterface, CsrfAwareActionInterface
      * @param \Magento\Framework\Data\Form\FormKey\Validator $formKeyValidator
      * @param \Muon\DevProfiler\Model\Store\RunStore $store
      * @param \Magento\Framework\Controller\Result\RedirectFactory $redirectFactory
-     * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
+     * @param \Muon\DevProfilerBoard\Model\Url\UrlBuilder $urls
      * @param \Muon\DevProfilerBoard\Model\Response\BoardResponse $response
      */
     public function __construct(
@@ -82,8 +82,14 @@ class Clear implements HttpPostActionInterface, CsrfAwareActionInterface
      */
     public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
     {
+        // The message is also carried as a query parameter. Magento queues it for the message
+        // manager, but the board renders a Result\Raw with no message area, and Magento_Theme's
+        // MessagePlugin drains the queue into the mage-messages cookie that nothing here reads —
+        // so a rejected clear silently redirected with no explanation.
         return new InvalidRequestException(
-            $this->redirectFactory->create()->setUrl($this->urls->link(UrlBuilder::ROUTE_INDEX)),
+            $this->redirectFactory->create()->setUrl(
+                $this->urls->link(UrlBuilder::ROUTE_INDEX, ['rejected' => 'form_key'])
+            ),
             [__('Invalid form key. Please refresh the board and try again.')]
         );
     }
@@ -100,6 +106,15 @@ class Clear implements HttpPostActionInterface, CsrfAwareActionInterface
      */
     public function validateForCsrf(RequestInterface $request): ?bool
     {
+        // Gate first. FrontController validates BEFORE dispatching, so execute()'s own isOpen()
+        // check is never reached on this path — a form-key-less cross-site POST to a
+        // production-mode instance answered 302 to the board index and planted "Invalid form key"
+        // in an arbitrary shopper's session. Returning true here is safe precisely because
+        // execute() then refuses with a 404.
+        if (!$this->response->isOpen()) {
+            return true;
+        }
+
         return $this->formKeyValidator->validate($request);
     }
 }

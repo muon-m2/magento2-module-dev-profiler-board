@@ -57,7 +57,15 @@ class BoardPage
             $title,
             // The filter is carried into every ledger link, so moving between runs does not silently
             // drop it — the same reason the analysis thresholds are carried.
-            $this->rail->render($rows, $selected, $state + $filter->toQuery(), $filter, $matching, $ledger->total),
+            $this->rail->render(
+                $rows,
+                $selected,
+                $state + $filter->toQuery(),
+                $filter,
+                $matching,
+                $ledger->total,
+                $ledger->formKey
+            ),
             $main,
             [
                 'shown' => count($rows),

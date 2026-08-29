@@ -11,7 +11,7 @@ namespace Muon\DevProfilerBoard\Test\Unit\Model\Html;
 use Magento\Framework\UrlInterface;
 use Muon\DevProfilerBoard\Model\Html\FilterPanel;
 use Muon\DevProfilerBoard\Model\Html\Tag;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Model\Run\RunFilter;
 use Muon\DevProfilerBoard\Test\Unit\UnitEscaper;
 use PHPUnit\Framework\TestCase;
@@ -39,7 +39,7 @@ class FilterPanelTest extends TestCase
     {
         $html = $this->panel->render(new RunFilter(), 30, 30);
 
-        self::assertStringContainsString('<form class="filter-form" method="get"', $html);
+        self::assertStringContainsString('class="filter-form"', $html);
         self::assertStringContainsString(' hidden', $html);
         self::assertStringContainsString('aria-expanded="false"', $html);
     }
@@ -53,7 +53,10 @@ class FilterPanelTest extends TestCase
         $html = $this->panel->render(new RunFilter(['miss']), 10, 30);
 
         self::assertStringContainsString('aria-expanded="true"', $html);
-        self::assertStringNotContainsString('<form class="filter-form" method="get" action="/en-us/muon_profiler/index/index" hidden', $html);
+
+        // Asserted on the attribute, not on a whole opening tag: matching the full tag made this
+        // pass vacuously the moment the form gained an id.
+        self::assertDoesNotMatchRegularExpression('/<form[^>]*\bhidden\b/', $html);
     }
 
     public function testTheToggleCarriesTheActiveCount(): void
@@ -115,5 +118,24 @@ class FilterPanelTest extends TestCase
     public function testTheFormSubmitsAsAGetSoAFilteredLedgerIsALink(): void
     {
         self::assertStringContainsString('method="get"', $this->panel->render(new RunFilter(), 30, 30));
+    }
+
+    /**
+     * The url filter is the one field on this form that echoes attacker-chosen text straight back
+     * into an attribute value. Tag's primitive is well tested in isolation; this proves the panel
+     * actually routes the field through it.
+     */
+    public function testAHostileUrlFilterIsRenderedInert(): void
+    {
+        $payload = '"><script>alert(1)</script>';
+        $html = $this->panel->render(
+            new RunFilter([], null, null, null, null, null, null, $payload),
+            1,
+            30
+        );
+
+        self::assertStringNotContainsString('<script', $html);
+        self::assertStringContainsString('name="url"', $html);
+        self::assertStringNotContainsString('value="' . $payload . '"', $html, 'the raw payload must not close the attribute');
     }
 }

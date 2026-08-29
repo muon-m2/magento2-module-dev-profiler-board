@@ -14,7 +14,7 @@ use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 use Muon\DevProfilerBoard\Model\Html\FilterPanel;
 use Muon\DevProfilerBoard\Model\Html\LedgerRail;
 use Muon\DevProfilerBoard\Model\Html\Tag;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Model\Html\Widgets;
 use Muon\DevProfilerBoard\Test\Unit\UnitEscaper;
 use PHPUnit\Framework\TestCase;
@@ -40,7 +40,7 @@ class LedgerRailTest extends TestCase
         );
 
         $tag = new Tag($this->unitEscaper());
-        $this->rail = new LedgerRail($tag, new Widgets($tag), new UrlBuilder($url), $this->formKey(), new FilterPanel($tag, new UrlBuilder($url)));
+        $this->rail = new LedgerRail($tag, new Widgets($tag), new UrlBuilder($url), new FilterPanel($tag, new UrlBuilder($url)));
     }
 
     public function testEachRowCarriesTheAttributesTheScriptDependsOn(): void
@@ -128,7 +128,7 @@ class LedgerRailTest extends TestCase
         );
 
         $tag = new Tag($this->unitEscaper());
-        $rail = new LedgerRail($tag, new Widgets($tag), new UrlBuilder($url), $this->formKey(), new FilterPanel($tag, new UrlBuilder($url)));
+        $rail = new LedgerRail($tag, new Widgets($tag), new UrlBuilder($url), new FilterPanel($tag, new UrlBuilder($url)));
         $rail->render([$this->row()], null, ['nplus1' => 3, 'panel' => 'sql']);
 
         self::assertSame(['token' => 'abc123', 'nplus1' => 3, 'panel' => 'sql'], $captured[0]);
@@ -141,16 +141,6 @@ class LedgerRailTest extends TestCase
         self::assertStringNotContainsString('<script>alert', $html);
     }
 
-    /**
-     * @return \Magento\Framework\Data\Form\FormKey
-     */
-    private function formKey(): FormKey
-    {
-        $formKey = $this->createStub(FormKey::class);
-        $formKey->method('getFormKey')->willReturn('test-form-key');
-
-        return $formKey;
-    }
 
     /**
      * @param array<string,mixed> $overrides

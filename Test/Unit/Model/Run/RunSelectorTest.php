@@ -9,7 +9,7 @@ declare(strict_types=1);
 namespace Muon\DevProfilerBoard\Test\Unit\Model\Run;
 
 use Muon\DevProfiler\Model\Analysis\CacheVerdict;
-use Muon\DevProfiler\Model\Store\RunStore;
+use Muon\DevProfiler\Api\RunReaderInterface;
 use Muon\DevProfilerBoard\Model\Run\RunFilter;
 use Muon\DevProfilerBoard\Model\Run\RunSelector;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -22,12 +22,12 @@ use PHPUnit\Framework\TestCase;
 #[AllowMockObjectsWithoutExpectations]
 class RunSelectorTest extends TestCase
 {
-    /** @var MockObject&RunStore */
-    private RunStore $store;
+    /** @var MockObject&RunReaderInterface */
+    private RunReaderInterface $store;
 
     protected function setUp(): void
     {
-        $this->store = $this->createMock(RunStore::class);
+        $this->store = $this->createMock(RunReaderInterface::class);
     }
 
     public function testANamedTokenIsLoadedDirectly(): void

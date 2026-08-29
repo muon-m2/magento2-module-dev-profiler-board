@@ -1,5 +1,7 @@
 # Muon_DevProfilerBoard
 
+**[Documentation](https://muon-m2.github.io/magento2-module-dev-profiler-board/)** · [Changelog](CHANGELOG.md) · [Technical reference](docs/technical-reference.md) · [Muon_DevProfiler](https://muon-m2.github.io/magento2-module-dev-profiler/) — the collector that records the runs this board displays
+
 A web board for [`Muon_DevProfiler`](https://github.com/muon-m2/magento2-module-dev-profiler). It
 reads the runs the profiler already captures and renders them in a browser: the cache verdict with
 its named cause, which physical file won every theme fallback, and the statement shapes behind an

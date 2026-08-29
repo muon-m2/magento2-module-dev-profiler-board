@@ -56,6 +56,41 @@ class AssetReader
      * @param string $name One of self::CSS or self::JS.
      * @return string|null
      */
+    /**
+     * A cheap fingerprint for one asset: its size and modification time.
+     *
+     * The two asset routes are full Magento bootstraps that ran on every board page load and could
+     * never be satisfied from the browser cache, because every response carries `no-store`. That is
+     * the right default for a page showing profiler data, but these two files are versionless
+     * static assets with no per-visitor state — so they get a validator instead and the browser can
+     * ask "still the same?" rather than re-fetching.
+     *
+     * @param string $name One of self::CSS or self::JS.
+     * @return string|null Null when the asset cannot be described, which is not an error.
+     */
+    public function fingerprint(string $name): ?string
+    {
+        $relative = self::FILES[$name] ?? null;
+        $root = $relative === null
+            ? null
+            : $this->registrar->getPath(ComponentRegistrar::MODULE, 'Muon_DevProfilerBoard');
+
+        if ($root === null) {
+            return null;
+        }
+
+        try {
+            $stat = $this->driver->stat($root . '/' . $relative);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $size = (int)($stat['size'] ?? 0);
+        $time = (int)($stat['mtime'] ?? 0);
+
+        return $size === 0 && $time === 0 ? null : sprintf('"%x-%x"', $time, $size);
+    }
+
     public function read(string $name): ?string
     {
         $relative = self::FILES[$name] ?? null;

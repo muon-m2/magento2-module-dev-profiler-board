@@ -204,4 +204,43 @@ class XssRegressionTest extends TestCase
             'truncated' => ['fallback' => 3, 'queries' => 0],
         ];
     }
+
+    /**
+     * The one context the shared payload never reached.
+     *
+     * PAYLOAD does not start with `/`, so RequestUrl::openable() refuses it and OverviewPanel::url()
+     * takes the plain-text branch. The `<a href>` branch — the only place in this module where run
+     * data reaches a URL attribute, and the only exercise of Tag's URL_ATTRIBUTES path — was
+     * therefore never executed by this class, which is how the backslash bypass shipped.
+     */
+    public function testAPoisonedButOpenableUrlIsInertInTheHrefBranch(): void
+    {
+        $panel = new OverviewPanel(new Tag($this->unitEscaper()), new Widgets(new Tag($this->unitEscaper())), new RequestUrl());
+
+        $html = $panel->render([
+            'token' => 'abc123',
+            'request' => [
+                'method' => 'GET',
+                'url' => '/en-us/' . self::PAYLOAD,
+                'status' => 200,
+                'kind' => 'page',
+                'duration_ms' => 1.0,
+                'memory_peak_kb' => 1,
+            ],
+            'context' => ['store_code' => 'en_us'],
+        ]);
+
+        self::assertStringContainsString('href=', $html, 'this payload must take the link branch');
+        self::assertStringNotContainsString('<script', $html);
+        self::assertStringNotContainsString('onerror=', $html);
+
+        // The href must stay same-origin: a second slash or a backslash after the first
+        // character is what sends a browser to another host.
+        preg_match('/href="([^"]*)"/', $html, $m);
+        $href = html_entity_decode($m[1] ?? '', ENT_QUOTES, 'UTF-8');
+
+        self::assertStringStartsWith('/', $href);
+        self::assertNotSame('/', substr($href, 1, 1));
+        self::assertNotSame('\\\\', substr($href, 1, 1));
+    }
 }

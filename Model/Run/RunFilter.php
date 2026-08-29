@@ -216,5 +216,4 @@ class RunFilter
     {
         return $value === null ? null : (float)$value;
     }
-
 }

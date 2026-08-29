@@ -55,11 +55,15 @@ class MarkdownExporter
         $request = $this->section($run, 'request');
         $verdict = $this->section($analysis, 'verdict');
 
+        // Through cell() like every other free-form value. This output exists for pasting into an
+        // issue or a chat, which are rendering contexts — a recorded URI of
+        // `/<img src=x onerror=...>` became raw HTML inside an `#` heading. GitHub sanitises; plenty
+        // of local previewers and wikis do not.
         $title = sprintf(
-            '# Profiler run `%s` — %s %s',
-            (string)($run['token'] ?? '?'),
-            (string)($request['method'] ?? ''),
-            (string)($request['url'] ?? '')
+            '# Profiler run %s — %s %s',
+            $this->cell((string)($run['token'] ?? '?')),
+            $this->cell((string)($request['method'] ?? '')),
+            $this->cell((string)($request['url'] ?? ''))
         );
 
         $line = sprintf(
@@ -168,7 +172,7 @@ class MarkdownExporter
                 (string)(int)($group['count'] ?? 0),
                 sprintf('%.1f', (float)($group['total_ms'] ?? 0)),
                 '`' . $this->oneLine((string)($group['sample'] ?? '')) . '`',
-                (string)($group['origin'] ?? '—'),
+                $this->cell((string)($group['origin'] ?? '—')),
             ];
         }
 

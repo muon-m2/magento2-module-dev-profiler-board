@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Board;
 
+use Magento\Framework\Data\Form\FormKey;
 use Magento\Store\Model\StoreManagerInterface;
 use Muon\DevProfilerBoard\Model\Run\RunFilter;
 use Muon\DevProfilerBoard\Model\Run\RunSelector;
@@ -28,10 +29,12 @@ class LedgerResolver
     /**
      * @param \Muon\DevProfilerBoard\Model\Run\RunSelector $runs
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\Framework\Data\Form\FormKey $formKey
      */
     public function __construct(
         private readonly RunSelector $runs,
-        private readonly StoreManagerInterface $storeManager
+        private readonly StoreManagerInterface $storeManager,
+        private readonly FormKey $formKey
     ) {
     }
 
@@ -47,8 +50,22 @@ class LedgerResolver
             $this->runs->feed(null, $filter),
             $this->runs->matching($filter),
             $this->runs->total(),
-            $this->storeCode()
+            $this->storeCode(),
+            $this->formKeyValue()
         );
+    }
+
+    /**
+     * @return string
+     */
+    private function formKeyValue(): string
+    {
+        try {
+            return (string)$this->formKey->getFormKey();
+        } catch (\Throwable) {
+            // Without it the Clear form will be refused, which is the safe direction.
+            return '';
+        }
     }
 
     /**

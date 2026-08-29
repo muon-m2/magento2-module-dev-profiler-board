@@ -112,7 +112,7 @@ class OverviewPanel
             return '— (request never resolved a store)';
         }
 
-        return $context['store_id'] === null ? $code : sprintf('%s (id %d)', $code, (int)$context['store_id']);
+        return ($context['store_id'] ?? null) === null ? $code : sprintf('%s (id %d)', $code, (int)$context['store_id']);
     }
 
     /**

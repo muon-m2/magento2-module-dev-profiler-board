@@ -15,7 +15,7 @@ use Muon\DevProfilerBoard\Model\Html\RawPanel;
 use Muon\DevProfilerBoard\Model\Html\RunView;
 use Muon\DevProfilerBoard\Model\Html\SqlPanel;
 use Muon\DevProfilerBoard\Model\Html\Tag;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Model\Html\VerdictBanner;
 use Muon\DevProfilerBoard\Test\Unit\UnitEscaper;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;

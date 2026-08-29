@@ -6,7 +6,7 @@
 
 declare(strict_types=1);
 
-namespace Muon\DevProfilerBoard\Model\Html;
+namespace Muon\DevProfilerBoard\Model\Url;
 
 use Magento\Framework\UrlInterface;
 

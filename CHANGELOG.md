@@ -4,6 +4,71 @@ All notable changes to `Muon_DevProfilerBoard` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] — 2026-08-29
+
+Closes the Low findings from the 2026-08-28 release-readiness audit, and moves the read path onto
+the collector's new `@api` surface.
+
+### Security
+
+- **The 404 no longer announces the board.** An undefined action under the board's own front name
+  returned an 11-byte `text/plain` body carrying the board's `Cache-Control` and `X-Robots-Tag`
+  headers, while an undefined action under any other front name falls through to `cms_noroute` and
+  returns a themed HTML 404. That difference was a one-request oracle for "this store runs
+  Muon_DevProfilerBoard" — which the class docblock explicitly claimed was not disclosed. The
+  closed-gate response is now empty and carries none of the board's headers.
+
+- **The Clear form is gated before dispatch.** `validateForCsrf()` returned true unconditionally, so
+  `FrontController`'s form-key check — which runs *before* dispatch — never reached `execute()`'s own
+  `isOpen()` gate. A form-key-less cross-site POST to a production-mode instance answered 302 to the
+  board index and planted "Invalid form key" in an arbitrary shopper's session. The gate is now
+  applied in `validateForCsrf()` itself, which is safe precisely because `execute()` then refuses
+  with a 404.
+
+- **The Markdown export escapes the recorded URI.** It was interpolated raw into an `#` heading, so a
+  recorded request for `/<img src=x onerror=...>` became live HTML in any previewer that renders the
+  export. GitHub sanitises; plenty of local previewers and wikis do not. It now goes through `cell()`
+  like every other free-form value.
+
+- **`X-Content-Type-Options: nosniff` on every board response**, and an explicit charset on all of
+  them, assets included. The content types are already correct, so no current browser sniffs these
+  into HTML — this is the layer for a future one, an embedding context, or a proxy that rewrites
+  `Content-Type`.
+
+### Performance
+
+- **The CSS and JS routes revalidate instead of re-fetching.** Both are full Magento bootstraps that
+  ran on every board page load and could never be served from cache, because every board response
+  carries `no-store`. That is the right default for a page showing profiler data, but these two files
+  are versionless and hold no per-visitor state, so they now carry an ETag and the browser can ask
+  "still the same?" — two fewer bootstraps per page load.
+
+- **The live feed backs off when it fails.** A fixed 4s retry hammered an instance that had gone away
+  — a container restart, an FPM bounce — for as long as the tab stayed open. It now doubles up to a
+  minute on consecutive failures and resets on the first success.
+
+### Fixed
+
+- **A refused Clear says why.** The board renders a `Result\Raw` with no message area, and
+  `Magento_Theme`'s `MessagePlugin` drains the message queue into a cookie nothing here reads, so a
+  rejected clear redirected in silence. The reason is now carried as a query parameter and rendered.
+
+- **The Pause button ships its pressed state.** `aria-pressed` was set by `board.js`, so a reader
+  arriving before the script ran was told nothing about the control's state.
+
+### Changed
+
+- **The read path depends on `Muon\DevProfiler\Api\RunReaderInterface`**, not the concrete
+  `RunStore`. `RunSelector` uses exactly the five methods that interface promises. Requires
+  `muon/module-dev-profiler` `^1.5`. `Controller\Runs\Clear` still takes the concrete store,
+  because clearing is a write and the interface is deliberately read-only.
+
+- `UrlBuilder` moved from `Model/Html` to `Model/Url`. It builds URLs; it renders no markup.
+
+- The form key is resolved in `LedgerResolver` and passed into the renderer, rather than injected
+  into it. `FormKey` is session-backed, and materialising one starts a session — a side effect a
+  markup builder has no business causing.
+
 ## [1.2.0] — 2026-08-28
 
 Closes the Medium findings from the 2026-08-28 release-readiness audit.

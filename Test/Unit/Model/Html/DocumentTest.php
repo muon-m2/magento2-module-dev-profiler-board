@@ -11,7 +11,7 @@ namespace Muon\DevProfilerBoard\Test\Unit\Model\Html;
 use Magento\Framework\UrlInterface;
 use Muon\DevProfilerBoard\Model\Html\Document;
 use Muon\DevProfilerBoard\Model\Html\Tag;
-use Muon\DevProfilerBoard\Model\Html\UrlBuilder;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
 use Muon\DevProfilerBoard\Test\Unit\UnitEscaper;
 use PHPUnit\Framework\TestCase;
 

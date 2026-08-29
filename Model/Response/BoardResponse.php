@@ -30,8 +30,11 @@ class BoardResponse
     private const HTML = 'text/html; charset=utf-8';
     private const JSON = 'application/json';
     private const TEXT = 'text/plain; charset=utf-8';
-    private const CSS = 'text/css';
-    private const JS = 'application/javascript';
+    // Charset declared explicitly on every type, assets included. The HTML document declares UTF-8
+    // first and browsers inherit it for a same-origin stylesheet, so this is not currently broken —
+    // but that is an implicit chain, and both files carry non-ASCII in their comments.
+    private const CSS = 'text/css; charset=utf-8';
+    private const JS = 'application/javascript; charset=utf-8';
 
     /**
      * @param \Magento\Framework\Controller\Result\RawFactory $rawFactory
@@ -84,18 +87,18 @@ class BoardResponse
      * @param string $css
      * @return \Magento\Framework\Controller\Result\Raw
      */
-    public function css(string $css): Raw
+    public function css(string $css, ?string $etag = null): Raw
     {
-        return $this->raw($css, self::CSS);
+        return $this->asset($css, self::CSS, $etag);
     }
 
     /**
      * @param string $js
      * @return \Magento\Framework\Controller\Result\Raw
      */
-    public function javascript(string $js): Raw
+    public function javascript(string $js, ?string $etag = null): Raw
     {
-        return $this->raw($js, self::JS);
+        return $this->asset($js, self::JS, $etag);
     }
 
     /**
@@ -105,10 +108,39 @@ class BoardResponse
      * @param string $message
      * @return \Magento\Framework\Controller\Result\Raw
      */
-    public function notFound(string $message = 'Not found.'): Raw
+    public function notFound(string $message = ''): Raw
     {
-        $result = $this->raw($message . "\n", self::TEXT);
+        // Empty by default, and with none of the board's own headers. An 11-byte text/plain body
+        // carrying Cache-Control and X-Robots-Tag was a one-request oracle for "this store runs
+        // Muon_DevProfilerBoard", where an undefined action under the same frontName falls through
+        // to cms_noroute and returns a themed HTML 404. The class docblock claimed the board's
+        // existence was not disclosed; it was.
+        $result = $this->rawFactory->create();
+        $result->setContents($message === '' ? '' : $message . "\n");
         $result->setHttpResponseCode(404);
+
+        return $result;
+    }
+
+    /**
+     * A cacheable static asset: the board's own CSS or JS.
+     *
+     * @param string $contents
+     * @param string $contentType
+     * @param string|null $etag
+     * @return \Magento\Framework\Controller\Result\Raw
+     */
+    private function asset(string $contents, string $contentType, ?string $etag): Raw
+    {
+        $result = $this->raw($contents, $contentType);
+
+        if ($etag !== null) {
+            // Revalidation rather than no-store. These two files are versionless and carry no
+            // per-visitor state, so the browser can ask instead of re-fetching — which saves a full
+            // Magento bootstrap per board page load, twice.
+            $result->setHeader('Cache-Control', 'no-cache, private', true);
+            $result->setHeader('ETag', $etag, true);
+        }
 
         return $result;
     }
@@ -130,6 +162,11 @@ class BoardResponse
         $result->setHeader('Content-Type', $contentType, true);
         $result->setHeader('Cache-Control', 'no-store, private', true);
         $result->setHeader('X-Robots-Tag', 'noindex, nofollow', true);
+
+        // The bodies carry recorded request URIs, which a visitor chooses. The content types are
+        // correct, so no current browser sniffs them into HTML — this is the defence-in-depth layer
+        // for a future one, an embedding context, or a proxy that rewrites Content-Type.
+        $result->setHeader('X-Content-Type-Options', 'nosniff', true);
 
         return $result;
     }

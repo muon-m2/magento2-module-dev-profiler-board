@@ -8,8 +8,9 @@ declare(strict_types=1);
 
 namespace Muon\DevProfilerBoard\Model\Html;
 
-use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 use Muon\DevProfilerBoard\Model\Run\RunFilter;
+use Muon\DevProfilerBoard\Model\Url\UrlBuilder;
+use Muon\DevProfiler\Model\Analysis\CacheVerdict;
 
 /**
  * The ledger's filter controls.
@@ -37,7 +38,7 @@ class FilterPanel
 
     /**
      * @param \Muon\DevProfilerBoard\Model\Html\Tag $tag
-     * @param \Muon\DevProfilerBoard\Model\Html\UrlBuilder $urls
+     * @param \Muon\DevProfilerBoard\Model\Url\UrlBuilder $urls
      */
     public function __construct(
         private readonly Tag $tag,
@@ -61,7 +62,7 @@ class FilterPanel
             $this->toggle($active)
             . $this->tag->tag(
                 'form',
-                [
+                ['id' => 'filter-form',
                     'class' => 'filter-form',
                     'method' => 'get',
                     'action' => $this->urls->link(UrlBuilder::ROUTE_INDEX),
@@ -96,6 +97,7 @@ class FilterPanel
             'type' => 'button',
             'data-filter-toggle' => 'true',
             'aria-expanded' => $active > 0 ? 'true' : 'false',
+                'aria-controls' => 'filter-form',
         ], $this->tag->text($label));
     }
 
