@@ -371,7 +371,9 @@
             if (!first) {
                 first = token;
                 row.setAttribute('data-compare-pick', 'a');
-                row.setAttribute('aria-pressed', 'true');
+                // Not aria-pressed: the rows are links, and aria-pressed is for toggle buttons —
+                // on an <a> it is invalid and announced inconsistently. The live region below is
+                // what actually tells a screen-reader user the pick registered.
                 announce('Run ' + token + ' selected as A. Pick a second run to compare.');
 
                 return;
@@ -383,7 +385,6 @@
         function clearPicks() {
             Array.prototype.forEach.call(list.querySelectorAll('[data-compare-pick]'), function (row) {
                 row.removeAttribute('data-compare-pick');
-                row.removeAttribute('aria-pressed');
             });
         }
 

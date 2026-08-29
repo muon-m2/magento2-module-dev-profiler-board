@@ -79,21 +79,24 @@ class RunPresenter
                     (string)($run['schema'] ?? '?'),
                     RunSelector::SUPPORTED_SCHEMA
                 ),
-                'Update Muon_DevProfilerBoard, or read the run with bin/magento muon:profile:show.'
+                'Update Muon_DevProfilerBoard, or read the run with bin/magento muon:profile:show.',
+                null,
+                $this->ledgers->resolve()
             );
         }
 
         $state = $this->state($request);
         $analysis = $this->analysis->analyse($run, $this->thresholds->fromRequest($request));
         $token = (string)($run['token'] ?? '');
+        $filter = $this->filters->fromRequest($request);
 
         return $this->page->render(
             'Run ' . $token . ' — Muon Profiler',
             $this->view->render($run, $analysis, $state),
             $token,
             $this->ledgerState($state),
-            $this->filters->fromRequest($request),
-            $this->ledgers->resolve($this->filters->fromRequest($request))
+            $filter,
+            $this->ledgers->resolve($filter)
         );
     }
 
