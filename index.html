@@ -107,7 +107,12 @@ bin/magento setup:upgrade</pre>
         than re-tested — two answers to "is profiling active here" would eventually disagree, and the
         wrong disagreement is a board that renders on an installation the collectors have correctly
         decided is production. It fails closed: an installation that cannot report its own mode is
-        treated as production. In any other mode every route returns 404.
+        treated as production. In any other mode every route returns 404 — and since 1.3.0 that 404 is
+        bare, carrying no body and none of the board's own headers. It previously answered with a short
+        <code>text/plain</code> body and the board's <code>Cache-Control</code> and
+        <code>X-Robots-Tag</code>, where an undefined action under any other front name falls through to
+        <code>cms_noroute</code>; the difference was a single-request test for whether a store runs the
+        board at all.
     </p>
     <p>
         Deployment mode is the <em>only</em> access control — there is no ACL, admin-session check or IP
